@@ -7,7 +7,7 @@ import io
 import urllib
 
 class ConceptualCaptionsDataset(Dataset):
-    def __init__(self, dataset, cache_dir="downloaded_images", preprocessor, transform=None):
+    def __init__(self, dataset, cache_dir, preprocessor, transform=None):
         """
         Args:
             dataset: Hugging Face dataset with image URLs and captions.
