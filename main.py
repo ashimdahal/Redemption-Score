@@ -22,9 +22,10 @@ from transformers import (
     Pix2StructForConditionalGeneration,
     GitForCausalLM,
     ViTImageProcessor,
-    BertLMHeadModel
+    BertLMHeadModel,
+    BitsAndBytesConfig
 )
-
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from datasets import load_dataset
 
 from tqdm import tqdm
@@ -78,12 +79,12 @@ model_configs = [
         "tokenizer_name":"google-bert/bert-base-uncased"
     },
 
-    # # LLaVA
-    # {
-    #     "processor_name": "xtuner/llava-llama-3-8b-v1_1-transformers",
-    #     "decoder_class": LlamaForCausalLM,
-    #     "decoder_name": "xtuner/llava-llama-3-8b-v1_1-transformers"
-    # },
+    # LLaVA
+    {
+        "processor_name": "xtuner/llava-llama-3-8b-v1_1-transformers",
+        "decoder_class": LlamaForCausalLM,
+        "decoder_name": "xtuner/llava-llama-3-8b-v1_1-transformers"
+    },
 
     # Swin-GPT2
     {
@@ -127,6 +128,29 @@ transform = A.Compose([
     A.GaussianBlur(blur_limit=(3, 5), p=0.3),
     A.CoarseDropout(num_holes_range=(4,8), fill="random", hole_height_range=(8,32), hole_width_range=(8,32), p=0.5)
 ])
+
+def get_lora_config(model):
+    """Smart LoRA configuration with fallback"""
+    try:
+        # First try automatic selection
+        return LoraConfig(
+            r=8,
+            lora_alpha=32,
+            target_modules='all-linear',
+            lora_dropout=0.1,
+            bias="none",
+            task_type="CAUSAL_LM"
+        )
+    except ValueError:
+        # Fallback to regex if automatic fails
+        return LoraConfig(
+            r=8,
+            lora_alpha=32,
+            target_modules=r'.*_proj$|.*query$|.*value$|.*embed|.*dense',
+            lora_dropout=0.1,
+            bias="none",
+            task_type="CAUSAL_LM"
+        )
 
 dataset = ConceptualCaptionsDataset(downloaded_subset, cache_dir=data_dir,transform=transform)
 
@@ -222,6 +246,7 @@ def train_model(model_config, dataset):
         dataloader_num_workers=2,
         report_to="none",
         save_safetensors=False,
+        optim="paged_adamw_8bit"
     )
     
     # Create Trainer
@@ -247,12 +272,17 @@ for idx, config in enumerate(model_configs):
     print(f"training model pair: {config['processor_name']}, {config['decoder_name']}")
     print("-"*100)
     
+    quantization_config = BitsAndBytesConfig(load_in_8_bit=True)
     # Dynamically load components
     processor = (config["processor_class"].from_pretrained(config["processor_name"])
                  if "processor_class" in config 
                  else AutoProcessor.from_pretrained(config["processor_name"]))
 
-    model = config["decoder_class"].from_pretrained(config["decoder_name"])
+    model = config["decoder_class"].from_pretrained(
+        config["decoder_name"],
+        quantization_config=quantization_config,
+        torch_dtype=torch.float16
+    )
 
     #ps i dont usually write this ugly code
     try:
@@ -268,6 +298,11 @@ for idx, config in enumerate(model_configs):
 
     if "Qwen" in config["processor_name"]:
         processor = AutoProcessor.from_pretrained(config['processor_name'], max_pixels=512*28*28)
+        
+    #LORA 
+    lora_config = get_lora_config(model)
+    model = prepare_model_for_kbit_training(model)
+    model = get_peft_model(model, lora_config)
 
     # Train and save
     trained_model = train_model({
