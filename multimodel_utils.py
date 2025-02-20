@@ -31,16 +31,20 @@ class MultimodalCollator(DataCollatorWithPadding):
 
 # Custom Model Wrapper
 class MultimodalModel(torch.nn.Module):
-    def __init__(self, processor, decoder, tokenizer):
+    def __init__(self, processor, decoder, tokenizer, freeze_vision_encoder=False):
         super().__init__()
         self.processor = processor
         self.decoder = decoder
         self.tokenizer = tokenizer
         
-        # Freeze vision encoder if needed
-        if hasattr(self.decoder, 'vision_model'):
-            for param in self.decoder.vision_model.parameters():
-                param.requires_grad = False
+        self.has_vision_encoder = hasattr(self.decoder, "vision_model") or hasattr(self.decoder, "encoder")
+
+        # Freeze vision encoder if required
+        if freeze_vision_encoder and self.has_vision_encoder:
+            vision_encoder = getattr(self.decoder, "vision_model", None) or getattr(self.decoder, "encoder", None)
+            if vision_encoder:
+                for param in vision_encoder.parameters():
+                    param.requires_grad = False
 
     def forward(self, pixel_values, input_ids, attention_mask, labels=None):
         # Handle different model architectures

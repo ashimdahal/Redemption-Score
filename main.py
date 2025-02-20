@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from transformers import (
+    AutoModel,
     AutoProcessor,
     AutoModelForCausalLM,
     AutoModelForSeq2SeqLM,
@@ -40,109 +41,77 @@ dataset = load_dataset("google-research-datasets/conceptual_captions", split="tr
 testing_indices = [0]
 downloaded_subset = dataset.select(testing_indices)
 
-processors = [
-    AutoProcessor.from_pretrained("Salesforce/blip-image-captioning-base"),
-    AutoProcessor.from_pretrained("microsoft/git-base"),
-    AutoProcessor.from_pretrained("nlpconnect/vit-gpt2-image-captioning"),
-    AutoProcessor.from_pretrained("openai/clip-vit-large-patch14"),
-    AutoProcessor.from_pretrained("xtuner/llava-llama-3-8b-v1_1-transformers"),
-    AutoProcessor.from_pretrained("google/pix2struct-large"),
-    AutoProcessor.from_pretrained("microsoft/swin-base-patch4-window12-384"),
-    AutoProcessor.from_pretrained("Ertugrul/Qwen2-VL-7B-Captioner-Relaxed"),
-    AutoProcessor.from_pretrained("deepseek-ai/Janus-Pro-7B"),
-]
-
-
 # Define model pairs (processor name -> decoder config)
-model_pairs = [
-    # BLIP - Requires original implementation
+# Model configuration with identifiers and parameters
+model_configs = [
+    # BLIP
     {
-        "processor": "Salesforce/blip-image-captioning-base",
-        "decoder": BlipForConditionalGeneration.from_pretrained(
-            "Salesforce/blip-image-captioning-base"
-        ),
+        "processor_name": "Salesforce/blip-image-captioning-base",
+        "decoder_class": BlipForConditionalGeneration,
+        "decoder_name": "Salesforce/blip-image-captioning-base",
         "requires_original": True
     },
     
-    # GIT - Paired with BART for seq2seq capability
+    # GIT-BART
     {
-        "processor": "microsoft/git-base",
-        "decoder": BartForConditionalGeneration.from_pretrained("facebook/bart-base"),
-        "tokenizer": AutoProcessor.from_pretrained("facebook/bart-base")._tokenizer
+        "processor_name": "microsoft/git-base",
+        "decoder_class": BartForConditionalGeneration,
+        "decoder_name": "facebook/bart-base",
+        "tokenizer_name": "facebook/bart-base"
     },
     
-    # ViT-GPT2 - Original pairing works best
+    # ViT-GPT2
     {
-        "processor": "nlpconnect/vit-gpt2-image-captioning",
-        "decoder": GPT2LMHeadModel.from_pretrained("gpt2-medium")
+        "processor_name": "nlpconnect/vit-gpt2-image-captioning",
+        "decoder_class": GPT2LMHeadModel,
+        "decoder_name": "gpt2-medium"
     },
     
-    # CLIP - Paired with T5 for text generation
+    # CLIP-T5
     {
-        "processor": "openai/clip-vit-large-patch14",
-        "decoder": T5ForConditionalGeneration.from_pretrained("t5-large"),
-        "tokenizer": AutoProcessor.from_pretrained("t5-large")._tokenizer
+        "processor_name": "openai/clip-vit-large-patch14",
+        "decoder_class": T5ForConditionalGeneration,
+        "decoder_name": "t5-large",
+        "tokenizer_name": "t5-large"
     },
     
-    # LLaVA - Use original Llama architecture
+    # LLaVA
     {
-        "processor": "xtuner/llava-llama-3-8b-v1_1-transformers",
-        "decoder": LlamaForCausalLM.from_pretrained(
-            "xtuner/llava-llama-3-8b-v1_1-transformers",
-        )
+        "processor_name": "xtuner/llava-llama-3-8b-v1_1-transformers",
+        "decoder_class": LlamaForCausalLM,
+        "decoder_name": "xtuner/llava-llama-3-8b-v1_1-transformers"
     },
     
-    # Pix2Struct - Keep original architecture
+    # Pix2Struct
     {
-        "processor": "google/pix2struct-large",
-        "decoder": Pix2StructForConditionalGeneration.from_pretrained("google/pix2struct-large")
+        "processor_name": "google/pix2struct-large",
+        "decoder_class": Pix2StructForConditionalGeneration,
+        "decoder_name": "google/pix2struct-large"
     },
     
-    # Swin Transformer - Paired with GPT-2
+    # Swin-GPT2
     {
-        "processor": "microsoft/swin-base-patch4-window12-384",
-        "decoder": GPT2LMHeadModel.from_pretrained("gpt2-xl"),
-        "tokenizer": AutoProcessor.from_pretrained("gpt2-xl")._tokenizer
+        "processor_name": "microsoft/swin-base-patch4-window12-384",
+        "decoder_class": GPT2LMHeadModel,
+        "decoder_name": "gpt2-xl",
+        "tokenizer_name": "gpt2-xl"
     },
     
-    # Qwen-VL - Use original model
+    # Qwen-VL
     {
-        "processor": "Ertugrul/Qwen2-VL-7B-Captioner-Relaxed",
-        "decoder": Qwen2VLForConditionalGeneration.from_pretrained(
-            "Qwen/Qwen2-VL-7B-Instruct",
-        )
+        "processor_name": "Ertugrul/Qwen2-VL-7B-Captioner-Relaxed",
+        "decoder_class": Qwen2VLForConditionalGeneration,
+        "decoder_name": "Qwen/Qwen2-VL-7B-Instruct"
     },
     
-    # DeepSeek Janus - Use as causal LM
+    # DeepSeek Janus
     {
-        "processor": "deepseek-ai/Janus-Pro-7B",
-        "decoder": AutoModelForCausalLM.from_pretrained(
-            "deepseek-ai/Janus-Pro-7B",
-            trust_remote_code=True
-        )
+        "processor_name": "deepseek-ai/Janus-Pro-7B",
+        "decoder_class": AutoModelForCausalLM,
+        "decoder_name": "deepseek-ai/Janus-Pro-7B",
+        "decoder_kwargs": {"trust_remote_code": True}
     }
 ]
-
-
-# Create final model list with processors and decoders
-models = []
-for pair in model_pairs:
-    processor = next(p for p in processors if p.name_or_path == pair["processor"])
-    
-    model_config = {
-        "processor": processor,
-        "decoder": pair["decoder"],
-        "requires_original": pair.get("requires_original", False)
-    }
-    
-    # Handle separate tokenizers where needed
-    if "tokenizer" in pair:
-        model_config["tokenizer"] = pair["tokenizer"]
-    else:
-        model_config["tokenizer"] = processor.tokenizer
-        
-    models.append(model_config)
-
 # Define Augmentations with Albumentations
 transform = A.Compose([
     A.HorizontalFlip(p=0.5),
@@ -165,15 +134,7 @@ def train_model(model_config, dataset):
     #     decoder=model_config["decoder"],
     #     tokenizer=model_config["tokenizer"]
     # )
-
-    model = VisionEncoderDecoderModel(
-        encoder=model_config["processor"],
-        decoder=model_config["decoder"]
-    )
-    
-    tokenizer = model_config["tokenizer"]
-    model.config.decoder_start_token_id = tokenizer.cls_token_id if tokenizer.cls_token_id else tokenizer.bos_token_id
-    model.config.pad_token_id = tokenizer.pad_token_id
+    model = select_best_model(decoder, processor, tokenizer)
 
     output_dir = (
         f"./results/{model_config['processor'].name_or_path.replace('/','-')}_"
@@ -210,13 +171,31 @@ def train_model(model_config, dataset):
     return model
 
 # Main Training Loop
-for idx, model_config in enumerate(models):
-    print(f"Training model {idx+1}/{len(models)}: {model_config['processor'].name_or_path}")
+for idx, config in enumerate(model_configs):
+    print(f"Training model {idx+1}/{len(model_configs)}")
+    print(f"training model pair: {config['processor_name']}, {config['decoder_name']}")
     
-    # Train model
-    trained_model = train_model(model_config, dataset)
+    # Dynamically load components
+    processor = AutoProcessor.from_pretrained(config["processor_name"])
+    model = config["decoder_class"].from_pretrained(config["decoder_name"])
     
-    # Save model
-    save_path = f"./saved_models/{model_config['processor'].name_or_path}"
+    tokenizer = (AutoTokenizer.from_pretrained(config["tokenizer_name"])
+                 if "tokenizer_name" in config
+                 else processor.tokenizer)
+
+    # Train and save
+    trained_model = train_model({
+        "processor":processor,
+        "model":model,
+        "tokenizer": tokenizer,
+        "requires_original": config.get("requires_original", False),
+    }, dataset)
+    
+    # Save artifacts
+    save_path = f"./saved_models/{config['processor_name'].replace('/','-')}"
     trained_model.decoder.save_pretrained(save_path)
-    model_config["tokenizer"].save_pretrained(save_path)
+    tokenizer.save_pretrained(save_path)
+    
+    # Cleanup memory
+    del processor, decoder, tokenizer, trained_model
+    torch.cuda.empty_cache()
