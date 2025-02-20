@@ -51,8 +51,7 @@ class ConceptualCaptionsDataset(Dataset):
         image_id = str(idx)
 
         image = self.fetch_image(image_url, image_id)
-        return torch.tensor([0]), caption
-        
+
         # If the image fails to load, return a blank tensor
         if image is None:
             image = PIL.Image.new("RGB", (400, 400), (255, 255, 255))  # White placeholder
@@ -62,7 +61,7 @@ class ConceptualCaptionsDataset(Dataset):
             image = self.transform(image=image)["image"]
 
         return {
-            "image": PIL.Image(image),
+            "image": PIL.Image.fromarray(image),
             "text": caption
         }
 
