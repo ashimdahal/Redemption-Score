@@ -8,26 +8,32 @@ from transformers import (
     Qwen2VLForConditionalGeneration,
     Qwen2VLProcessor
 )
+from janus.models import  VLChatProcessor, MultiModalityCausalLM
 from transformers.data.data_collator import DataCollatorWithPadding
+from janus.utils.io import load_pil_images
 import torch
 
 # Custom Data Collator to handle multimodal inputs
 class MultimodalCollator(DataCollatorWithPadding):
-    def __init__(self, processor, tokenizer):
+    def __init__(self, processor, tokenizer ):
         super().__init__(tokenizer)
         self.processor = processor
-        self.conversation = [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                    },
-                    {"type": "text", "text": "Describe this image."},
-                ],
-            }
-        ]
         
+        if isinstance(self.processor, Qwen2VLProcessor):
+            self.conversation = [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                        },
+                        {"type": "text", "text": "Describe this image."},
+                    ],
+                }
+            ]
+        
+            self.text_prompt = self.processor.apply_chat_template(self.conversation, add_generation_prompt=True)
+
     def __call__(self, features):
         # Process text
         text = [item["text"] for item in features]
@@ -58,13 +64,33 @@ class MultimodalCollator(DataCollatorWithPadding):
                 "labels": text_inputs["input_ids"]  # For causal LM models
             } 
         elif isinstance(self.processor, Qwen2VLProcessor):
-            text_prompt = self.processor.apply_chat_template(self.conversation, add_generation_prompt=True)
-            processed_outputs = self.processor(images=images, text=[text_prompt], return_tensors="pt")
+            processed_outputs = self.processor(images=images, text=[self.text_prompt], return_tensors="pt")
             processed_outputs["labels"] = text_inputs["input_ids"]
             return processed_outputs
+        elif isinstance(self.processor, VLChatProcessor):
+            conversations = [
+                {
+                    "role": "<|User|>",
+                    "content": f"<image_placeholder>\nDescribe this image.",
+                    "images": [item["image_path"]],
+                }
+                for item in features
+            ]
+            processed_outputs = self.processor(
+                conversations=conversations,
+                images=images, 
+                force_batchify=True
+            )
+            return {
+                "pixel_values":processed_outputs["pixel_values"],
+                "labels":text_inputs["input_ids"],
+                "attention_mask":processed_outputs["attention_mask"],
+                "images_emb_mask":processed_outputs["images_emb_mask"],
+                "images_seq_mask":processed_outputs["images_seq_mask"],
+                "input_ids":processed_outputs["input_ids"]
+            }
         else:
             pixel_values = self.processor.image_processor(images, return_tensors="pt").pixel_values
-        
         
         return {
             "pixel_values": pixel_values,
@@ -97,11 +123,26 @@ class MultimodalModel(torch.nn.Module):
             LlamaForCausalLM,
             BartForConditionalGeneration,
             Pix2StructForConditionalGeneration,
-            Qwen2VLForConditionalGeneration 
+            Qwen2VLForConditionalGeneration,
         )):
+
+            # print(kwargs)
             # Encoder-decoder models
             outputs = self.decoder(
                 **kwargs
+            )
+        elif isinstance(self.decoder, MultiModalityCausalLM):
+            # the language model is a wrapper for llammaforcasualLM
+            embeddings = self.decoder.prepare_inputs_embeds(**kwargs)
+            outputs = self.decoder.language_model(
+                inputs_embeds=embeddings,
+                attention_mask=kwargs["attention_mask"],
+                pad_token_id=self.tokenizer.eos_token_id,
+                bos_token_id=self.tokenizer.bos_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+                max_new_tokens=40,
+                # use_cache=True,
+                labels=kwargs["labels"]
             )
         else:
             # fallback 
