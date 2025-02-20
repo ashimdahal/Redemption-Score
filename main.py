@@ -165,6 +165,10 @@ def train_model(model_config, dataset):
         decoder=model_config["decoder"]
     )
     
+    tokenizer = model_config["tokenizer"]
+    model.config.decoder_start_token_id = tokenizer.cls_token_id if tokenizer.cls_token_id else tokenizer.bos_token_id
+    model.config.pad_token_id = tokenizer.pad_token_id
+
     # Training Arguments
     training_args = TrainingArguments(
         output_dir=f"./results/{model_config['processor'].name_or_path}_{model_config["decoder"].name_or_path}",
