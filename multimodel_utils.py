@@ -1,4 +1,4 @@
-from transformers import Trainer, TrainingArguments
+from transformers import BlipForConditionalGeneration, BartForConditionalGeneration
 from transformers.data.data_collator import DataCollatorWithPadding
 import torch
 

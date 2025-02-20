@@ -14,7 +14,10 @@ from transformers import (
     GPT2LMHeadModel,
     T5ForConditionalGeneration,
     LlamaForCausalLM,
-    Qwen2ForCausalLM
+    Qwen2ForCausalLM,
+    Trainer,
+    TrainingArguments,
+    VisionEncoderDecoderModel
 )
 
 from datasets import load_dataset
@@ -30,7 +33,8 @@ data_dir = Path("./dataset/")
 downloaded_indices = sorted([int(p.stem) for p in data_dir.glob("*.jpg") if p.stem.isdigit()])
 
 dataset = load_dataset("google-research-datasets/conceptual_captions", split="train")
-downloaded_subset = dataset.select(downloaded_indices)
+testing_indice = 0
+downloaded_subset = dataset.select(testing_indice)
 
 processors = [
     AutoProcessor.from_pretrained("Salesforce/blip-image-captioning-base"),
@@ -148,7 +152,7 @@ transform = A.Compose([
     A.CoarseDropout(num_holes_range=(4,8), fill="random", hole_height_range=(8,32), hole_width_range=(8,32), p=0.5)
 ])
 
-dataset = ConceptualCaptionsDataset(downloaded_subset, transform=transform)
+dataset = ConceptualCaptionsDataset(downloaded_subset, cache_dir=data_dir,transform=transform)
 
 # Training Setup
 def train_model(model_config, dataset):
@@ -169,9 +173,13 @@ def train_model(model_config, dataset):
     model.config.decoder_start_token_id = tokenizer.cls_token_id if tokenizer.cls_token_id else tokenizer.bos_token_id
     model.config.pad_token_id = tokenizer.pad_token_id
 
+    output_dir = (
+        f"./results/{model_config['processor'].name_or_path.replace('/','-')}_"
+        f"{model_config['decoder'].name_or_path.replace('/','-')}"
+    )
     # Training Arguments
     training_args = TrainingArguments(
-        output_dir=f"./results/{model_config['processor'].name_or_path}_{model_config["decoder"].name_or_path}",
+        output_dir=output_dir,
         per_device_train_batch_size=4,
         num_train_epochs=3,
         learning_rate=5e-5,
@@ -179,7 +187,7 @@ def train_model(model_config, dataset):
         save_strategy="epoch",
         remove_unused_columns=False,
         fp16=torch.cuda.is_available(),
-        dataloader_num_workers=4,
+        dataloader_num_workers=2,
         report_to="none"
     )
     

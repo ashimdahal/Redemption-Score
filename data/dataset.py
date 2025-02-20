@@ -1,13 +1,13 @@
 import numpy as np
 import os
 import torch
-from torch.utils.data import Dataset
 import PIL.Image
 import io
 import urllib
+from torch.utils.data import Dataset
 
 class ConceptualCaptionsDataset(Dataset):
-    def __init__(self, dataset, cache_dir,  transform=None):
+    def __init__(self, dataset, cache_dir="dataset",  transform=None):
         """
         Args:
             dataset: Hugging Face dataset with image URLs and captions.
