@@ -1,7 +1,7 @@
 import glob
 import albumentations as A
-from pathlib import Path
 
+import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -14,27 +14,31 @@ from transformers import (
     GPT2LMHeadModel,
     T5ForConditionalGeneration,
     LlamaForCausalLM,
-    Qwen2ForCausalLM,
+    Qwen2VLForConditionalGeneration,
     Trainer,
     TrainingArguments,
-    VisionEncoderDecoderModel
+    VisionEncoderDecoderModel,
+    Pix2StructForConditionalGeneration
 )
 
 from datasets import load_dataset
 
-# Set a writable cache directory
 from tqdm import tqdm
+from pathlib import Path
 
 from multimodel_utils import MultimodalModel, MultimodalCollator
 from data import ConceptualCaptionsDataset
+
+#unused but would help the automodelforcasuallm to register multimodality
+from janus.models import MultiModalityCausalLM
 
 # Load dataset from Hugging Face
 data_dir = Path("./dataset/")
 downloaded_indices = sorted([int(p.stem) for p in data_dir.glob("*.jpg") if p.stem.isdigit()])
 
 dataset = load_dataset("google-research-datasets/conceptual_captions", split="train")
-testing_indice = 0
-downloaded_subset = dataset.select(testing_indice)
+testing_indices = [0]
+downloaded_subset = dataset.select(testing_indices)
 
 processors = [
     AutoProcessor.from_pretrained("Salesforce/blip-image-captioning-base"),
@@ -64,7 +68,7 @@ model_pairs = [
     {
         "processor": "microsoft/git-base",
         "decoder": BartForConditionalGeneration.from_pretrained("facebook/bart-base"),
-        "tokenizer": AutoProcessor.from_pretrained("facebook/bart-base").tokenizer
+        "tokenizer": AutoProcessor.from_pretrained("facebook/bart-base")._tokenizer
     },
     
     # ViT-GPT2 - Original pairing works best
@@ -77,7 +81,7 @@ model_pairs = [
     {
         "processor": "openai/clip-vit-large-patch14",
         "decoder": T5ForConditionalGeneration.from_pretrained("t5-large"),
-        "tokenizer": AutoProcessor.from_pretrained("t5-large").tokenizer
+        "tokenizer": AutoProcessor.from_pretrained("t5-large")._tokenizer
     },
     
     # LLaVA - Use original Llama architecture
@@ -85,29 +89,27 @@ model_pairs = [
         "processor": "xtuner/llava-llama-3-8b-v1_1-transformers",
         "decoder": LlamaForCausalLM.from_pretrained(
             "xtuner/llava-llama-3-8b-v1_1-transformers",
-            trust_remote_code=True
         )
     },
     
     # Pix2Struct - Keep original architecture
     {
         "processor": "google/pix2struct-large",
-        "decoder": T5ForConditionalGeneration.from_pretrained("google/pix2struct-large")
+        "decoder": Pix2StructForConditionalGeneration.from_pretrained("google/pix2struct-large")
     },
     
     # Swin Transformer - Paired with GPT-2
     {
         "processor": "microsoft/swin-base-patch4-window12-384",
         "decoder": GPT2LMHeadModel.from_pretrained("gpt2-xl"),
-        "tokenizer": AutoProcessor.from_pretrained("gpt2-xl").tokenizer
+        "tokenizer": AutoProcessor.from_pretrained("gpt2-xl")._tokenizer
     },
     
     # Qwen-VL - Use original model
     {
         "processor": "Ertugrul/Qwen2-VL-7B-Captioner-Relaxed",
-        "decoder": Qwen2ForCausalLM.from_pretrained(
-            "Ertugrul/Qwen2-VL-7B-Captioner-Relaxed",
-            trust_remote_code=True
+        "decoder": Qwen2VLForConditionalGeneration.from_pretrained(
+            "Qwen/Qwen2-VL-7B-Instruct",
         )
     },
     
