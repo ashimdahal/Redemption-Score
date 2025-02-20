@@ -62,6 +62,7 @@ class ConceptualCaptionsDataset(Dataset):
 
         return {
             "image": PIL.Image.fromarray(image),
-            "text": caption
+            "text": caption,
+            "image_path":f"{self.cache_dir}/{image_id}.jpg" # for janus pro only
         }
 
