@@ -148,18 +148,26 @@ transform = A.Compose([
     A.CoarseDropout(num_holes_range=(4,8), fill="random", hole_height_range=(8,32), hole_width_range=(8,32), p=0.5)
 ])
 
+dataset = ConceptualCaptionsDataset(downloaded_subset, transform=transform)
+
 # Training Setup
 def train_model(model_config, dataset):
     # Initialize model wrapper
-    model = MultimodalModel(
-        processor=model_config["processor"],
-        decoder=model_config["decoder"],
-        tokenizer=model_config["tokenizer"]
+    # to be tested and debugged but we use predefined visionencoderdecodermodel from hf
+    # model = MultimodalModel(
+    #     processor=model_config["processor"],
+    #     decoder=model_config["decoder"],
+    #     tokenizer=model_config["tokenizer"]
+    # )
+
+    model = VisionEncoderDecoderModel(
+        encoder=model_config["processor"],
+        decoder=model_config["decoder"]
     )
     
     # Training Arguments
     training_args = TrainingArguments(
-        output_dir=f"./results/{model_config['processor'].name_or_path}",
+        output_dir=f"./results/{model_config['processor'].name_or_path}_{model_config["decoder"].name_or_path}",
         per_device_train_batch_size=4,
         num_train_epochs=3,
         learning_rate=5e-5,
@@ -190,14 +198,6 @@ def train_model(model_config, dataset):
 # Main Training Loop
 for idx, model_config in enumerate(models):
     print(f"Training model {idx+1}/{len(models)}: {model_config['processor'].name_or_path}")
-    
-    # Create dataset with augmentations
-    dataset = ConceptualCaptionsDataset(
-        downloaded_subset,
-        processor=model_config["processor"],
-        tokenizer=model_config["tokenizer"],
-        transform=transform
-    )
     
     # Train model
     trained_model = train_model(model_config, dataset)
