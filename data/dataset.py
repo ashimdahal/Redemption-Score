@@ -7,7 +7,7 @@ import io
 import urllib
 
 class ConceptualCaptionsDataset(Dataset):
-    def __init__(self, dataset, cache_dir, preprocessor, transform=None):
+    def __init__(self, dataset, cache_dir,  transform=None):
         """
         Args:
             dataset: Hugging Face dataset with image URLs and captions.
@@ -16,7 +16,6 @@ class ConceptualCaptionsDataset(Dataset):
         """
         self.dataset = dataset
         self.cache_dir = cache_dir
-        self.preprocessor = preprocessor
         self.transform = transform
 
         # Create cache directory if it doesn't exist
@@ -62,8 +61,8 @@ class ConceptualCaptionsDataset(Dataset):
             image = np.array(image)
             image = self.transform(image=image)["image"]
 
-        encoded_inputs = self.preprocessor(images=image, text=caption, padding="max_length", return_tensors="pt")
-        encoded_inputs = {k:v.squeeze() for k,v in encoded_inputs.items()}
-
-        return encoded_inputs
+        return {
+            "image": PIL.Image(image),
+            "text": caption
+        }
 
