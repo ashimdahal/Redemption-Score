@@ -23,9 +23,11 @@ from transformers import (
     GitForCausalLM,
     ViTImageProcessor,
     BertLMHeadModel,
-    BitsAndBytesConfig
+    BertModel,
+    BitsAndBytesConfig,
+    MllamaForConditionalGeneration
 )
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training
 from datasets import load_dataset
 
 from tqdm import tqdm
@@ -42,64 +44,63 @@ data_dir = Path("./dataset/")
 downloaded_indices = sorted([int(p.stem) for p in data_dir.glob("*.jpg") if p.stem.isdigit()])
 
 dataset = load_dataset("google-research-datasets/conceptual_captions", split="train")
-testing_indices = [0]
+testing_indices = [0,1]
 downloaded_subset = dataset.select(testing_indices)
 
 # Define model pairs (processor name -> decoder config)
 # Model configuration with identifiers and parameters
 model_configs = [
-    # BLIP
-    {
-        "processor_name": "Salesforce/blip-image-captioning-base",
-        "decoder_class": BlipForConditionalGeneration,
-        "decoder_name": "Salesforce/blip-image-captioning-base",
-        "requires_original": True
-    },
+    # # BLIP
+    # {
+    #     "processor_name": "Salesforce/blip-image-captioning-base",
+    #     "decoder_class": BlipForConditionalGeneration,
+    #     "decoder_name": "Salesforce/blip-image-captioning-base",
+    #     "requires_original": True
+    # },
+    #
+    # # GIT-BART
+    # {
+    #     "processor_name": "microsoft/git-base",
+    #     "decoder_class": AutoModelForCausalLM,
+    #     "decoder_name": "microsoft/git-base",
+    #     "tokenizer_name": "microsoft/git-base"
+    # },
+    #
+    # {
+    #     "processor_name": "nlpconnect/vit-gpt2-image-captioning",
+    #     "decoder_class": VisionEncoderDecoderModel,
+    #     "decoder_name": "nlpconnect/vit-gpt2-image-captioning",
+    #     "processor_class": ViTImageProcessor
+    # },
+    #
+    # {
+    #     "processor_name": "google/vit-base-patch16-224-in21k",
+    #     "decoder_class": BertModel,
+    #     "decoder_name": "google-bert/bert-base-uncased",
+    #     "tokenizer_name":"google-bert/bert-base-uncased"
+    # },
+    #
+    # #LLAMA 
+    # {
+    #     "processor_name": "meta-llama/Llama-3.2-11B-Vision",
+    #     "decoder_class": MllamaForConditionalGeneration,
+    #     "decoder_name": "meta-llama/Llama-3.2-11B-Vision"
+    # },
+    #
+    # # Swin-GPT2
+    # {
+    #     "processor_name": "microsoft/swin-base-patch4-window12-384",
+    #     "decoder_class": BertModel,
+    #     "decoder_name": "google-bert/bert-base-uncased",
+    #     "tokenizer_name": "google-bert/bert-base-uncased"
+    # },
 
-    # GIT-BART
-    {
-        "processor_name": "microsoft/git-base",
-        "decoder_class": AutoModelForCausalLM,
-        "decoder_name": "microsoft/git-base",
-        "tokenizer_name": "microsoft/git-base"
-    },
-
-    {
-        "processor_name": "nlpconnect/vit-gpt2-image-captioning",
-        "decoder_class": VisionEncoderDecoderModel,
-        "decoder_name": "nlpconnect/vit-gpt2-image-captioning",
-        "processor_class": ViTImageProcessor
-    },
-
-    # CLIP-T5
-    {
-        "processor_name": "google/vit-base-patch16-224-in21k",
-        "decoder_class": AutoModelForCausalLM,
-        "decoder_name": "google-bert/bert-base-uncased",
-        "tokenizer_name":"google-bert/bert-base-uncased"
-    },
-
-    # LLaVA
-    {
-        "processor_name": "xtuner/llava-llama-3-8b-v1_1-transformers",
-        "decoder_class": LlamaForCausalLM,
-        "decoder_name": "xtuner/llava-llama-3-8b-v1_1-transformers"
-    },
-
-    # Swin-GPT2
-    {
-        "processor_name": "microsoft/swin-base-patch4-window12-384",
-        "decoder_class": AutoModelForCausalLM,
-        "decoder_name": "google-bert/bert-base-uncased",
-        "tokenizer_name": "google-bert/bert-base-uncased"
-    },
-
-    # Pix2Struct
-    {
-        "processor_name": "google/pix2struct-large",
-        "decoder_class": Pix2StructForConditionalGeneration,
-        "decoder_name": "google/pix2struct-large"
-    },
+    # # Pix2Struct
+    # {
+    #     "processor_name": "google/pix2struct-large",
+    #     "decoder_class": Pix2StructForConditionalGeneration,
+    #     "decoder_name": "google/pix2struct-large"
+    # },
 
     
     # Qwen-VL
@@ -130,27 +131,71 @@ transform = A.Compose([
 ])
 
 def get_lora_config(model):
-    """Smart LoRA configuration with fallback"""
-    try:
-        # First try automatic selection
-        return LoraConfig(
-            r=8,
-            lora_alpha=32,
-            target_modules='all-linear',
-            lora_dropout=0.1,
-            bias="none",
-            task_type="CAUSAL_LM"
-        )
-    except ValueError:
-        # Fallback to regex if automatic fails
-        return LoraConfig(
-            r=8,
-            lora_alpha=32,
-            target_modules=r'.*_proj$|.*query$|.*value$|.*embed|.*dense',
-            lora_dropout=0.1,
-            bias="none",
-            task_type="CAUSAL_LM"
-        )
+    """
+    Returns a LoRA configuration tailored to the underlying model's architecture.
+    The function inspects the model's type (and optionally its config) and sets
+    target_modules and task_type accordingly.
+    """
+    # Get a lowercase name for the model class.
+    model_name = model.__class__.__name__.lower()
+    
+    # Default settings.
+    r = 8
+    lora_alpha = 32
+    lora_dropout = 0.1
+    bias = "none"
+    
+    # Determine target modules and task type based on model type.
+    if "blip" in model_name:
+        # BLIP models (encoder-decoder with vision inputs)
+        target_modules = "all-linear"
+        task_type = "SEQ_2_SEQ_LM"
+    elif "t5" in model_name or "bart" in model_name:
+        # Encoder-decoder architectures.
+        # For simplicity, here we target common attention projection modules.
+        target_modules = ["q_proj", "v_proj"]
+        task_type = "SEQ_2_SEQ_LM"
+    elif "pix2struct" in model_name:
+        target_modules = ["query",  "value"]
+        task_type = "SEQ_2_SEQ_LM"
+    elif "gpt2" in model_name or "llama" in model_name :
+        # Decoder-only architectures
+        target_modules = ["q_proj", "v_proj"]
+        task_type = "CAUSAL_LM"
+    elif "janus" in model_name or "qwen" in model_name:
+        # Decoder-only architectures.
+        target_modules =  ['k_proj', 'q_proj', 'v_proj', 'o_proj', "gate_proj", "down_proj", "up_proj"]
+        task_type = "CAUSAL_LM"
+    else:
+        # Fallback using a regex pattern for linear layers.
+        target_modules = r".*_proj$|.*query$|.*value$|.*dense"
+        task_type = "CAUSAL_LM"
+    
+    # Create and return the LoRA configuration.
+    return LoraConfig(
+        r=r,
+        lora_alpha=lora_alpha,
+        target_modules=target_modules,
+        lora_dropout=lora_dropout,
+        bias=bias,
+        task_type=task_type
+    )
+
+# With custom preparation:
+def prepare_janus_pro(model):
+    # Manual gradient setup
+    for param in model.parameters():
+        param.requires_grad = False
+        if param.dtype == torch.float32:
+            param.requires_grad = True
+    
+    # Add missing embedding method
+    if not hasattr(model, 'get_input_embeddings'):
+        model.get_input_embeddings = lambda: model.decoder.get_input_embeddings()
+    
+    # Enable mixed precision
+    model.enable_input_require_grads()
+    return model
 
 dataset = ConceptualCaptionsDataset(downloaded_subset, cache_dir=data_dir,transform=transform)
 
@@ -168,11 +213,9 @@ def select_best_model(processor, decoder, tokenizer, processor_name, decoder_nam
     """
     # List of model types that work with VisionEncoderDecoderModel
     vision_encoder_decoder_compatible = (
-        # BartForConditionalGeneration,
-        # T5ForConditionalGeneration,
         BertLMHeadModel,
         GPT2LMHeadModel,
-        AutoModelForCausalLM,
+        BertModel
     )
     # List of models that require their original implementation
     requires_original_implementation = (
@@ -180,11 +223,13 @@ def select_best_model(processor, decoder, tokenizer, processor_name, decoder_nam
         Pix2StructForConditionalGeneration,
         Qwen2VLForConditionalGeneration,
         LlamaForCausalLM,  
+        MllamaForConditionalGeneration
     )
     
     try:
+        orig_instance = decoder.base_model.model if isinstance(decoder, PeftModel) else decoder
         # Check if decoder is compatible with VisionEncoderDecoderModel
-        if isinstance(decoder, vision_encoder_decoder_compatible):
+        if isinstance(orig_instance, vision_encoder_decoder_compatible):
             model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(
                 processor_name,
                 decoder_name
@@ -196,17 +241,25 @@ def select_best_model(processor, decoder, tokenizer, processor_name, decoder_nam
             )
             model.config.pad_token_id = tokenizer.pad_token_id
             
-            return model
+            if "pix2struct-large" not in config["processor_name"]:
+                lora_config = get_lora_config(model)
+                model = prepare_model_for_kbit_training(model)
+                model = get_peft_model(model, lora_config)
+                model.gradient_checkpointing_enable()
+                del decoder
+                return model
             
+            return model
+
         # Check if model requires original implementation
-        elif isinstance(decoder, requires_original_implementation):
+        elif isinstance(orig_instance, requires_original_implementation):
             return MultimodalModel(
                 processor=processor,
                 decoder=decoder,
                 tokenizer=tokenizer
             )
         # ohh the irony of the models lol
-        elif isinstance(decoder, (GitForCausalLM, VisionEncoderDecoderModel, LlamaForCausalLM)):
+        elif isinstance(orig_instance, (GitForCausalLM, VisionEncoderDecoderModel, LlamaForCausalLM)):
             return decoder
         # For any other case, default to MultimodalModel
         else:
@@ -222,6 +275,13 @@ def select_best_model(processor, decoder, tokenizer, processor_name, decoder_nam
             f"and decoder {decoder.__class__.__name__}: {str(e)}"
         )
 
+# After creating your model
+def enable_grads(model):
+    for param in model.parameters():
+        if param.requires_grad:
+            param.requires_grad_(True)
+            param.register_hook(lambda grad: torch.nan_to_num(grad, nan=0.0))
+
 # Training Setup
 def train_model(model_config, dataset):
     # Initialize model wrapper
@@ -232,6 +292,7 @@ def train_model(model_config, dataset):
         processor_name=model_config["processor_name"],
         decoder_name=model_config["decoder_name"]
     )
+    enable_grads(model)
 
     # Training Arguments
     training_args = TrainingArguments(
@@ -246,8 +307,10 @@ def train_model(model_config, dataset):
         dataloader_num_workers=2,
         report_to="none",
         save_safetensors=False,
-        optim="paged_adamw_8bit"
+        optim="adafactor",
+        gradient_checkpointing_kwargs={"use_reentrant":False},
     )
+
     
     # Create Trainer
     trainer = Trainer(
@@ -272,7 +335,7 @@ for idx, config in enumerate(model_configs):
     print(f"training model pair: {config['processor_name']}, {config['decoder_name']}")
     print("-"*100)
     
-    quantization_config = BitsAndBytesConfig(load_in_8_bit=True)
+    quantization_config = BitsAndBytesConfig(load_in_8_bit=True) 
     # Dynamically load components
     processor = (config["processor_class"].from_pretrained(config["processor_name"])
                  if "processor_class" in config 
@@ -296,13 +359,19 @@ for idx, config in enumerate(model_configs):
         except AttributeError as e:
             tokenizer = AutoTokenizer.from_pretrained(config["processor_name"])
 
-    if "Qwen" in config["processor_name"]:
-        processor = AutoProcessor.from_pretrained(config['processor_name'], max_pixels=512*28*28)
+    # if "Qwen" in config["processor_name"]:
+    #     processor = AutoProcessor.from_pretrained(config['processor_name'], max_pixels=512*28*28)
         
     #LORA 
     lora_config = get_lora_config(model)
-    model = prepare_model_for_kbit_training(model)
-    model = get_peft_model(model, lora_config)
+    if "janus" not in config["processor_name"]:
+        model = prepare_model_for_kbit_training(model) 
+    else:
+        model = prepare_janus_pro(model)
+
+    model = get_peft_model(model, lora_config) 
+
+    model.gradient_checkpointing_enable() 
 
     # Train and save
     trained_model = train_model({
