@@ -7,37 +7,52 @@ from transformers import (
     Pix2StructForConditionalGeneration,
     Qwen2VLForConditionalGeneration,
     Qwen2VLProcessor,
-    LlavaProcessor,
-    LlavaForConditionalGeneration
+    MllamaProcessor,
+    MllamaForConditionalGeneration
 )
+from peft import PeftModel
+from PIL import Image
 from janus.models import  VLChatProcessor, MultiModalityCausalLM
 from transformers.data.data_collator import DataCollatorWithPadding
 from janus.utils.io import load_pil_images
+from qwen_vl_utils import process_vision_info
 import torch
 
+
+system_message = """You are a Vision Language Model specialized in captioning or providing a short description of them"""
+
+def format_data(sample):
+    return [
+        {
+            "role": "system",
+            "content": [{"type": "text", "text": system_message}],
+        },
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "image": sample["image"],
+                },
+                {
+                    "type": "text",
+                    "text": "describe the image",
+                },
+            ],
+        },
+        {
+            "role": "assistant",
+            "content": [{"type": "text", "text": sample["text"]}],
+        },
+    ]
 # Custom Data Collator to handle multimodal inputs
 class MultimodalCollator(DataCollatorWithPadding):
     def __init__(self, processor, tokenizer ):
         super().__init__(tokenizer)
         self.processor = processor
         
-        if isinstance(self.processor, Qwen2VLProcessor):
-            self.conversation = [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                        },
-                        {"type": "text", "text": "Describe this image."},
-                    ],
-                }
-            ]
-        
-            self.text_prompt = self.processor.apply_chat_template(self.conversation, add_generation_prompt=True)
-        if isinstance(self.processor, LlavaProcessor):
-            self.conversation = "USER: <image>\nWhat's the content of the image? ASSISTANT:"
-            self.processor.patch_size = 14
+        if isinstance(self.processor, MllamaProcessor):
+            self.text_prompt = "<|image|> Describe this image."
 
     def __call__(self, features):
         # Process text
@@ -46,7 +61,8 @@ class MultimodalCollator(DataCollatorWithPadding):
             text, 
             padding=True, 
             truncation=True, 
-            return_tensors="pt"
+            return_tensors="pt",
+            max_length=128
         )
 
         # Process images
@@ -68,8 +84,36 @@ class MultimodalCollator(DataCollatorWithPadding):
                 # "decoder_input_ids":text_inputs["input_ids"]
                 "labels": text_inputs["input_ids"]  # For causal LM models
             } 
-        elif isinstance(self.processor, Qwen2VLProcessor):
-            processed_outputs = self.processor(images=images, text=[self.text_prompt], return_tensors="pt")
+        elif isinstance(self.processor, (Qwen2VLProcessor)):
+            features = [format_data(feature) for feature in features]
+            texts = [self.processor.apply_chat_template(example, tokenize=False) for example in features]
+
+            image_inputs = [process_vision_info(example)[0] for example in features]
+            processed_outputs = self.processor(
+                text=texts,
+                images=image_inputs,
+                return_tensors="pt",
+                padding=True
+            )
+            labels = processed_outputs["input_ids"].clone()
+            labels[labels == self.tokenizer.pad_token_id] = -100
+            image_tokens = [151652, 151653, 151655]
+            for image_token_id in image_tokens:
+                labels[labels == image_token_id] = -100
+
+            processed_outputs["labels"] = labels
+            return processed_outputs
+
+        elif isinstance(self.processor, MllamaProcessor):
+            #needs explicitly set same token size on input and output
+            processed_outputs = self.processor(
+                images=images,
+                text=[self.text_prompt] * len(images),
+                return_tensors="pt",
+                max_length=128,
+                truncation=True,
+                padding="max_length"
+            )
             processed_outputs["labels"] = text_inputs["input_ids"]
             return processed_outputs
         elif isinstance(self.processor, VLChatProcessor):
@@ -94,16 +138,6 @@ class MultimodalCollator(DataCollatorWithPadding):
                 "images_seq_mask":processed_outputs["images_seq_mask"],
                 "input_ids":processed_outputs["input_ids"]
             }
-        elif isinstance(self.processor, LlavaProcessor):
-            #explicitly define the patch size since it doesnt directly come here
-            processed_outputs = self.processor(text=self.conversation, images=[images], return_tensors="pt")
-            print(len(text_inputs["input_ids"]))
-            print(len(processed_outputs["input_ids"]))
-            return {
-                "pixel_values":processed_outputs.pixel_values,
-                "input_ids":processed_outputs["input_ids"],
-                "labels": text_inputs["input_ids"]
-            } 
         else:
             print(self.processor.__class__)
             pixel_values = self.processor.image_processor(images, return_tensors="pt").pixel_values
@@ -125,6 +159,7 @@ class MultimodalModel(torch.nn.Module):
         
         self.has_vision_encoder = hasattr(self.decoder, "vision_model") or hasattr(self.decoder, "encoder")
 
+        self.orig_instance = self.decoder.base_model.model if isinstance(decoder, PeftModel) else self.decoder
         # Freeze vision encoder if required
         if freeze_vision_encoder and self.has_vision_encoder:
             vision_encoder = getattr(self.decoder, "vision_model", None) or getattr(self.decoder, "encoder", None)
@@ -134,19 +169,19 @@ class MultimodalModel(torch.nn.Module):
 
     def forward(self, **kwargs):
         # Handle different model architectures
-        if isinstance(self.decoder.base_model.model, (
+        if isinstance(self.orig_instance, (
             BlipForConditionalGeneration,
             LlamaForCausalLM,
             BartForConditionalGeneration,
             Pix2StructForConditionalGeneration,
             Qwen2VLForConditionalGeneration,
-            LlavaForConditionalGeneration,
+            MllamaForConditionalGeneration,
         )):
             # Encoder-decoder models
             outputs = self.decoder(
                 **kwargs
             )
-        elif isinstance(self.decoder.base_model.model, MultiModalityCausalLM):
+        elif isinstance(self.orig_instance, MultiModalityCausalLM):
             # the language model is a wrapper for llammaforcasualLM
             embeddings = self.decoder.prepare_inputs_embeds(**kwargs)
             outputs = self.decoder.language_model(
@@ -161,7 +196,7 @@ class MultimodalModel(torch.nn.Module):
             )
         else:
             # fallback  for  bart
-            print(self.decoder.base_model.model)
+            print(self.orig_instance)
             inputs_embeds = self.decoder.get_input_embeddings()(kwargs["input_ids"])
             
             # Combine visual and text embeddings
