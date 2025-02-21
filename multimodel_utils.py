@@ -6,7 +6,9 @@ from transformers import (
     Pix2StructProcessor,
     Pix2StructForConditionalGeneration,
     Qwen2VLForConditionalGeneration,
-    Qwen2VLProcessor
+    Qwen2VLProcessor,
+    LlavaProcessor,
+    LlavaForConditionalGeneration
 )
 from janus.models import  VLChatProcessor, MultiModalityCausalLM
 from transformers.data.data_collator import DataCollatorWithPadding
@@ -33,6 +35,9 @@ class MultimodalCollator(DataCollatorWithPadding):
             ]
         
             self.text_prompt = self.processor.apply_chat_template(self.conversation, add_generation_prompt=True)
+        if isinstance(self.processor, LlavaProcessor):
+            self.conversation = "USER: <image>\nWhat's the content of the image? ASSISTANT:"
+            self.processor.patch_size = 14
 
     def __call__(self, features):
         # Process text
@@ -89,7 +94,18 @@ class MultimodalCollator(DataCollatorWithPadding):
                 "images_seq_mask":processed_outputs["images_seq_mask"],
                 "input_ids":processed_outputs["input_ids"]
             }
+        elif isinstance(self.processor, LlavaProcessor):
+            #explicitly define the patch size since it doesnt directly come here
+            processed_outputs = self.processor(text=self.conversation, images=[images], return_tensors="pt")
+            print(len(text_inputs["input_ids"]))
+            print(len(processed_outputs["input_ids"]))
+            return {
+                "pixel_values":processed_outputs.pixel_values,
+                "input_ids":processed_outputs["input_ids"],
+                "labels": text_inputs["input_ids"]
+            } 
         else:
+            print(self.processor.__class__)
             pixel_values = self.processor.image_processor(images, return_tensors="pt").pixel_values
         
         return {
@@ -118,20 +134,19 @@ class MultimodalModel(torch.nn.Module):
 
     def forward(self, **kwargs):
         # Handle different model architectures
-        if isinstance(self.decoder, (
+        if isinstance(self.decoder.base_model.model, (
             BlipForConditionalGeneration,
             LlamaForCausalLM,
             BartForConditionalGeneration,
             Pix2StructForConditionalGeneration,
             Qwen2VLForConditionalGeneration,
+            LlavaForConditionalGeneration,
         )):
-
-            # print(kwargs)
             # Encoder-decoder models
             outputs = self.decoder(
                 **kwargs
             )
-        elif isinstance(self.decoder, MultiModalityCausalLM):
+        elif isinstance(self.decoder.base_model.model, MultiModalityCausalLM):
             # the language model is a wrapper for llammaforcasualLM
             embeddings = self.decoder.prepare_inputs_embeds(**kwargs)
             outputs = self.decoder.language_model(
@@ -145,11 +160,12 @@ class MultimodalModel(torch.nn.Module):
                 labels=kwargs["labels"]
             )
         else:
-            # fallback 
-            inputs_embeds = self.decoder.get_input_embeddings()(input_ids)
+            # fallback  for  bart
+            print(self.decoder.base_model.model)
+            inputs_embeds = self.decoder.get_input_embeddings()(kwargs["input_ids"])
             
             # Combine visual and text embeddings
-            visual_features = self.decoder.vision_model(pixel_values).last_hidden_state
+            visual_features = self.decoder.vision_model(kwargs["pixel_values"]).last_hidden_state
             combined_embeds = torch.cat([visual_features, inputs_embeds], dim=1)
             
             outputs = self.decoder(
