@@ -175,3 +175,4 @@ cython_debug/
 dataset/
 results/
 trainer_logs/
+logs_tf_board/
