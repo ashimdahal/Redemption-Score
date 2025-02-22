@@ -8,7 +8,8 @@ from transformers import (
     Qwen2VLForConditionalGeneration,
     Qwen2VLProcessor,
     MllamaProcessor,
-    MllamaForConditionalGeneration
+    MllamaForConditionalGeneration,
+    BlipProcessor
 )
 from peft import PeftModel
 from PIL import Image
@@ -59,10 +60,10 @@ class MultimodalCollator(DataCollatorWithPadding):
         text = [item["text"] for item in features]
         text_inputs = self.tokenizer(
             text, 
-            padding=True, 
+            padding="max_length", 
             truncation=True, 
             return_tensors="pt",
-            max_length=128
+            max_length=512
         )
 
         # Process images
@@ -110,7 +111,7 @@ class MultimodalCollator(DataCollatorWithPadding):
                 images=images,
                 text=[self.text_prompt] * len(images),
                 return_tensors="pt",
-                max_length=128,
+                max_length=512,
                 truncation=True,
                 padding="max_length"
             )
@@ -121,32 +122,60 @@ class MultimodalCollator(DataCollatorWithPadding):
                 {
                     "role": "<|User|>",
                     "content": f"<image_placeholder>\nDescribe this image.",
-                    "images": [item["image_path"]],
+                    "images": [image],
                 }
-                for item in features
+                for image in images
             ]
             processed_outputs = self.processor(
                 conversations=conversations,
                 images=images, 
                 force_batchify=True
             )
+            labels = processed_outputs["input_ids"].clone()
+            labels[labels == self.tokenizer.pad_token_id] = -100
+            image_tokens = [self.processor.tokenizer.convert_tokens_to_ids(self.processor.image_token)]
+            for image_token_id in image_tokens:
+                labels[labels == image_token_id] = -100
+
+            processed_outputs["labels"] = labels
             return {
                 "pixel_values":processed_outputs["pixel_values"],
-                "labels":text_inputs["input_ids"],
+                "labels":processed_outputs["input_ids"],
                 "attention_mask":processed_outputs["attention_mask"],
                 "images_emb_mask":processed_outputs["images_emb_mask"],
                 "images_seq_mask":processed_outputs["images_seq_mask"],
                 "input_ids":processed_outputs["input_ids"]
             }
+        elif (isinstance(self.processor, BlipProcessor)):
+            processed_outputs = self.processor(
+                images=images,
+                text=text,
+                return_tensors="pt",
+                padding="max_length"
+            )
+            labels = processed_outputs["input_ids"].clone()
+            # Mask padding tokens.
+            processed_outputs["labels"] = labels
+
+            return processed_outputs
         else:
-            print(self.processor.__class__)
-            pixel_values = self.processor.image_processor(images, return_tensors="pt").pixel_values
+            print(self.processor)
+            processed_outputs = self.processor(
+                images=images,
+                text=text,
+                return_tensors="pt",
+                padding="max_length"
+            )
+
+        print(self.processor)
+        labels = processed_outputs["input_ids"].clone() # Mask padding tokens.
+        labels[labels == self.processor.tokenizer.pad_token_id] = -100
         
         return {
-            "pixel_values": pixel_values,
-            "input_ids": text_inputs["input_ids"],
+            "pixel_values": processed_outputs["pixel_values"],
+            "input_ids": processed_outputs["input_ids"],
             "attention_mask": text_inputs["attention_mask"],
-            "labels": text_inputs["input_ids"]  # For causal LM models
+            "labels": labels
         }
 
 # Custom Model Wrapper
