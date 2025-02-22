@@ -69,7 +69,11 @@ Hugging face's transformers could give errors like `ModelName.forward() got unex
 Go to `transformers/models/BertModel/modelling_bert.py` and on the forward implementation for the given model's forward() just add `**kwargs` in them.
 
 ## Running guide
-
+OPTIONAL: create a conda environment (highly recommended; especially because of how peft and transformers would be modified for our usecase)
+```bash
+conda create -n captions python=3.10
+conda activate captions
+```
 1. Install necessary libraries
     `pip install -r requirements.txt`
 2. Download Dataset
