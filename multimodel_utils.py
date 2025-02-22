@@ -224,7 +224,7 @@ class MultimodalModel(torch.nn.Module):
                 labels=kwargs["labels"]
             )
         else:
-            # fallback  for  bart
+            # fallback 
             print(self.orig_instance)
             inputs_embeds = self.decoder.get_input_embeddings()(kwargs["input_ids"])
             
