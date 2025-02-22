@@ -66,4 +66,19 @@ A deep comparison of 8 VLMs (some are not VLMs by nature but could be made into 
 ## HF errors for non natural VLMs
 Hugging face's transformers could give errors like `ModelName.forward() got unexpected argument input_ids`. This is beacuse lora passes them down even though we dont send it through our collator. Easy fix is to go to the model's implementation and add `**kwargs`. Example:
 
-Go to `transformers/models/BertModel/modelling_bert.py` and on forward for the given model's forward() just add `**kwargs` in them.
+Go to `transformers/models/BertModel/modelling_bert.py` and on the forward implementation for the given model's forward() just add `**kwargs` in them.
+
+## Running guide
+
+1. Install necessary libraries
+2. Download Dataset
+    `python download.py`
+3. Clean dataset 
+    ```bash
+    chmod +x ./clean_dataset.sh
+    ./clean_dataset.sh
+    ```
+4. Ready to run the code 
+    ```python main.py```
+
+Solve any errors based on peft error guide above.
