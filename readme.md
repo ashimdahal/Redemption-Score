@@ -71,6 +71,7 @@ Go to `transformers/models/BertModel/modelling_bert.py` and on the forward imple
 ## Running guide
 
 1. Install necessary libraries
+    `pip install -r requirements.txt`
 2. Download Dataset
     `python download.py`
 3. Clean dataset 
