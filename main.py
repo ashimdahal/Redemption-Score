@@ -41,59 +41,59 @@ from janus.models import MultiModalityCausalLM, VLChatProcessor
 
 # Load dataset from Hugging Face
 data_dir = Path("./dataset/")
-downloaded_indices = sorted([int(p.stem) for p in data_dir.glob("*.jpg") if p.stem.isdigit()])
 
 dataset = load_dataset("google-research-datasets/conceptual_captions", split="train")
-testing_indices = [0,1]
-downloaded_subset = dataset.select(testing_indices)
+downloaded_indices = sorted([int(p.stem) for p in data_dir.glob("*.jpg") if p.stem.isdigit()])
+
+downloaded_subset = dataset.select(downloaded_indices)
 
 # Define model pairs (processor name -> decoder config)
 # Model configuration with identifiers and parameters
 model_configs = [
-    # # BLIP
-    # {
-    #     "processor_name": "Salesforce/blip-image-captioning-base",
-    #     "decoder_class": BlipForConditionalGeneration,
-    #     "decoder_name": "Salesforce/blip-image-captioning-base",
-    #     "requires_original": True
-    # },
-    #
-    # # GIT-BART
-    # {
-    #     "processor_name": "microsoft/git-base",
-    #     "decoder_class": AutoModelForCausalLM,
-    #     "decoder_name": "microsoft/git-base",
-    #     "tokenizer_name": "microsoft/git-base"
-    # },
-    #
-    # {
-    #     "processor_name": "nlpconnect/vit-gpt2-image-captioning",
-    #     "decoder_class": VisionEncoderDecoderModel,
-    #     "decoder_name": "nlpconnect/vit-gpt2-image-captioning",
-    #     "processor_class": ViTImageProcessor
-    # },
-    #
-    # {
-    #     "processor_name": "google/vit-base-patch16-224-in21k",
-    #     "decoder_class": BertModel,
-    #     "decoder_name": "google-bert/bert-base-uncased",
-    #     "tokenizer_name":"google-bert/bert-base-uncased"
-    # },
-    #
-    # #LLAMA 
-    # {
-    #     "processor_name": "meta-llama/Llama-3.2-11B-Vision",
-    #     "decoder_class": MllamaForConditionalGeneration,
-    #     "decoder_name": "meta-llama/Llama-3.2-11B-Vision"
-    # },
-    #
-    # # Swin-GPT2
-    # {
-    #     "processor_name": "microsoft/swin-base-patch4-window12-384",
-    #     "decoder_class": BertModel,
-    #     "decoder_name": "google-bert/bert-base-uncased",
-    #     "tokenizer_name": "google-bert/bert-base-uncased"
-    # },
+    # BLIP
+    {
+        "processor_name": "Salesforce/blip-image-captioning-base",
+        "decoder_class": BlipForConditionalGeneration,
+        "decoder_name": "Salesforce/blip-image-captioning-base",
+        "requires_original": True
+    },
+
+    # GIT-BART
+    {
+        "processor_name": "microsoft/git-base",
+        "decoder_class": AutoModelForCausalLM,
+        "decoder_name": "microsoft/git-base",
+        "tokenizer_name": "microsoft/git-base"
+    },
+
+    {
+        "processor_name": "nlpconnect/vit-gpt2-image-captioning",
+        "decoder_class": VisionEncoderDecoderModel,
+        "decoder_name": "nlpconnect/vit-gpt2-image-captioning",
+        "processor_class": ViTImageProcessor
+    },
+
+    {
+        "processor_name": "google/vit-base-patch16-224-in21k",
+        "decoder_class": BertModel,
+        "decoder_name": "google-bert/bert-base-uncased",
+        "tokenizer_name":"google-bert/bert-base-uncased"
+    },
+
+    #LLAMA 
+    {
+        "processor_name": "meta-llama/Llama-3.2-11B-Vision",
+        "decoder_class": MllamaForConditionalGeneration,
+        "decoder_name": "meta-llama/Llama-3.2-11B-Vision"
+    },
+
+    # Swin-GPT2
+    {
+        "processor_name": "microsoft/swin-base-patch4-window12-384",
+        "decoder_class": BertModel,
+        "decoder_name": "google-bert/bert-base-uncased",
+        "tokenizer_name": "google-bert/bert-base-uncased"
+    },
 
     # # Pix2Struct
     # {
@@ -102,7 +102,7 @@ model_configs = [
     #     "decoder_name": "google/pix2struct-large"
     # },
 
-    
+
     # Qwen-VL
     {
         "processor_name": "Ertugrul/Qwen2-VL-7B-Captioner-Relaxed",
@@ -194,7 +194,7 @@ def prepare_janus_pro(model):
         model.get_input_embeddings = lambda: model.decoder.get_input_embeddings()
     
     # Enable mixed precision
-    model.enable_input_require_grads()
+    # model.get_input_embeddings().weight.requires_grad = True
     return model
 
 dataset = ConceptualCaptionsDataset(downloaded_subset, cache_dir=data_dir,transform=transform)
@@ -296,19 +296,21 @@ def train_model(model_config, dataset):
 
     # Training Arguments
     training_args = TrainingArguments(
-        output_dir=f"trainer_logs/{model_config['decoder_name']}",
-        per_device_train_batch_size=4,
+        output_dir=f"trainer_logs/{model_config['processor_name']}",
+        per_device_train_batch_size=16,
+        auto_find_batch_size=True,
         num_train_epochs=2,
         learning_rate=5e-5,
-        logging_dir='./logs',
+        logging_dir=f'./logs_tf_board/{model_config["processor_name"]}',
         # save_strategy="epoch",
         remove_unused_columns=False,
         fp16=torch.cuda.is_available(),
         dataloader_num_workers=2,
-        report_to="none",
+        report_to="tensorboard",
         save_safetensors=False,
         optim="adafactor",
         gradient_checkpointing_kwargs={"use_reentrant":False},
+        gradient_accumulation_steps=4,
     )
 
     
@@ -364,14 +366,15 @@ for idx, config in enumerate(model_configs):
         
     #LORA 
     lora_config = get_lora_config(model)
-    if "janus" not in config["processor_name"]:
+    if "Janus-Pro-7B" not in config["decoder_name"]:
         model = prepare_model_for_kbit_training(model) 
     else:
         model = prepare_janus_pro(model)
 
     model = get_peft_model(model, lora_config) 
 
-    model.gradient_checkpointing_enable() 
+    if "Janus-Pro-7B" not in config["decoder_name"]:
+        model.gradient_checkpointing_enable() 
 
     # Train and save
     trained_model = train_model({
