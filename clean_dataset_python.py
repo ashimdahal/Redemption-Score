@@ -1,6 +1,7 @@
 from pathlib import Path
 from datasets import load_dataset
 
+import albumentations as A
 from data import ConceptualCaptionsDataset
 
 data_dir = Path("./dataset/")
@@ -11,13 +12,19 @@ downloaded_indices = sorted([int(p.stem) for p in data_dir.glob("*.jpg") if p.st
 print(f"found {len(downloaded_indices)} predownloaded images, selecting them as the subset")
 
 downloaded_subset = dataset.select(downloaded_indices)
+transform = A.Compose([
+    A.HorizontalFlip(p=0.5),
+])
 
 print("cleaning dataset")
 dataset = ConceptualCaptionsDataset(
     downloaded_subset,
     downloaded_indices,
     cache_dir=data_dir,
-    first_run=True
+    transform=transform,
+    first_run=False
 )
+for x in dataset:
+    pass
 
 print("finished cleaning dataset")
