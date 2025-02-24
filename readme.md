@@ -9,7 +9,7 @@ A deep comparison of 8 VLMs (some are not VLMs by nature but could be made into 
         "requires_original": True
     },
 
-    # GIT-BART
+    # GIT-VIT
     {
         "processor_name": "microsoft/git-base",
         "decoder_class": AutoModelForCausalLM,
@@ -38,7 +38,7 @@ A deep comparison of 8 VLMs (some are not VLMs by nature but could be made into 
         "decoder_name": "meta-llama/Llama-3.2-11B-Vision"
     },
 
-    # Swin-GPT2
+    # Swin-BERT
     {
         "processor_name": "microsoft/swin-base-patch4-window12-384",
         "decoder_class": BertModel,
