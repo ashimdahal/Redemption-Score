@@ -1,14 +1,21 @@
 import os
+
+import urllib
+import io
 import requests
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 from datasets import load_dataset
+from datasets.utils.file_utils import get_datasets_user_agent
+
+from PIL import Image
 
 # Configuration
 DATASET_NAME = "google-research-datasets/conceptual_captions"
 SAVE_DIR = "dataset"
-NUM_WORKERS = 40  # Increase based on your bandwidth
-RETRIES = 3
+NUM_WORKERS = 8  # Increase based on your bandwidth
+RETRIES = 1
+USER_AGENT = get_datasets_user_agent()
 
 # Load dataset
 dataset = load_dataset(DATASET_NAME, split="train")
@@ -27,11 +34,15 @@ def download_image(args):
     # Download with retries
     for _ in range(RETRIES):
         try:
-            response = requests.get(url, timeout=10)
-            if response.status_code == 200:
-                with open(filename, "wb") as f:
-                    f.write(response.content)
-                return
+            request = urllib.request.Request(
+                url, 
+                data=None,
+                headers={"user-agent":USER_AGENT}
+               )
+            with urllib.request.urlopen(request, timeout=20) as req: 
+                image = Image.open(io.BytesIO(req.read()))
+                image.save(filename)
+            return
         except Exception as e:
             pass
 
@@ -41,3 +52,4 @@ tasks = [(idx, item["image_url"]) for idx, item in enumerate(dataset)]
 # Download in parallel
 with ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
     list(tqdm(executor.map(download_image, tasks), total=len(tasks)))
+
