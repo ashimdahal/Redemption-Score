@@ -1,3 +1,4 @@
+import random
 import glob
 import albumentations as A
 
@@ -45,7 +46,7 @@ data_dir = Path("./dataset/")
 dataset = load_dataset("google-research-datasets/conceptual_captions", split="train")
 downloaded_indices = sorted([int(p.stem) for p in data_dir.glob("*.jpg") if p.stem.isdigit()])
 
-downloaded_subset = dataset.select(downloaded_indices)
+downloaded_indices_subset = random.sample(downloaded_indices, 120000) 
 
 # Define Augmentations with Albumentations
 transform = A.Compose([
@@ -59,8 +60,8 @@ transform = A.Compose([
 ])
 
 dataset = ConceptualCaptionsDataset(
-    downloaded_subset,
-    downloaded_indices,
+    dataset,
+    downloaded_indices_subset,
     cache_dir=data_dir,
     transform=transform
 )
@@ -317,14 +318,19 @@ def train_model(model_config, dataset):
         learning_rate=5e-5,
         logging_dir=f'./logs_tf_board/{model_config["processor_name"]}',
         # save_strategy="epoch",
+        save_steps=250,
+        resume_from_checkpoint=True,
         remove_unused_columns=False,
-        fp16=torch.cuda.is_available(),
+        # fp16=True,
+        bf16=True,
         dataloader_num_workers=2,
+        dataloader_prefetch_factor=2,
         report_to="tensorboard",
         save_safetensors=False,
         optim="adafactor",
         gradient_checkpointing_kwargs={"use_reentrant":False},
-        gradient_accumulation_steps=2,
+        gradient_accumulation_steps=1,
+        max_grad_norm=3.0,
     )
 
     
@@ -352,6 +358,13 @@ for idx, config in enumerate(model_configs):
     print(f"training model pair: {config['processor_name']}, {config['decoder_name']}")
     print("*"*100)
     print()
+    with open("outputs.log", 'a') as f:
+        f.write("*"*100)
+        f.write(f"Training model {idx+1}/{len(model_configs)}")
+        f.write(f"training model pair: {config['processor_name']}, {config['decoder_name']}")
+        f.write("*"*100)
+        f.write("\n")
+        
     
     quantization_config = BitsAndBytesConfig(load_in_8_bit=True) 
     # Dynamically load components
@@ -397,6 +410,11 @@ for idx, config in enumerate(model_configs):
     print(model.print_trainable_parameters())
     print("-"*100)
 
+    with open("outputs.log", 'a') as f:
+        f.write("*"*100)
+        f.write(model.print_trainable_parameters())
+        f.write("*"*100)
+        f.write("\n")
     # Train and save
     trained_model = train_model({
         "processor":processor,
