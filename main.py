@@ -47,6 +47,12 @@ downloaded_indices = sorted([int(p.stem) for p in data_dir.glob("*.jpg") if p.st
 
 downloaded_subset = dataset.select(downloaded_indices)
 
+dataset = ConceptualCaptionsDataset(
+    downloaded_subset,
+    downloaded_indices,
+    cache_dir=data_dir,
+    transform=transform
+)
 # Define model pairs (processor name -> decoder config)
 # Model configuration with identifiers and parameters
 model_configs = [
@@ -197,7 +203,6 @@ def prepare_janus_pro(model):
     # model.get_input_embeddings().weight.requires_grad = True
     return model
 
-dataset = ConceptualCaptionsDataset(downloaded_subset, cache_dir=data_dir,transform=transform)
 
 def select_best_model(processor, decoder, tokenizer, processor_name, decoder_name):
     """
@@ -292,6 +297,10 @@ def train_model(model_config, dataset):
         processor_name=model_config["processor_name"],
         decoder_name=model_config["decoder_name"]
     )
+    print("-"*100)
+    print(f"Model: {model_config['processor_name']}, {model_config['decoder_name']}")
+    print(model.print_trainable_parameters())
+    print("-"*100)
     enable_grads(model)
 
     # Training Arguments
@@ -332,10 +341,12 @@ def train_model(model_config, dataset):
 
 # Main Training Loop
 for idx, config in enumerate(model_configs):
+    print()
     print("*"*100)
     print(f"Training model {idx+1}/{len(model_configs)}")
     print(f"training model pair: {config['processor_name']}, {config['decoder_name']}")
-    print("-"*100)
+    print("*"*100)
+    print()
     
     quantization_config = BitsAndBytesConfig(load_in_8_bit=True) 
     # Dynamically load components
