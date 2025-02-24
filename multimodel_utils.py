@@ -159,7 +159,6 @@ class MultimodalCollator(DataCollatorWithPadding):
 
             return processed_outputs
         else:
-            print(self.processor)
             processed_outputs = self.processor(
                 images=images,
                 text=text,
