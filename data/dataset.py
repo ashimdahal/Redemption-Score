@@ -2,6 +2,7 @@ import numpy as np
 import os
 import torch
 import PIL.Image
+from PIL import Image
 import io
 import urllib
 
@@ -65,7 +66,7 @@ class ConceptualCaptionsDataset(Dataset):
                 # self.original_indices.remove(idx)
             except Exception as e:
                 print(e)
-                # os.remove(image_path)
+                os.remove(image_path)
 
     def __len__(self):
         return len(self.original_indices)
@@ -86,11 +87,21 @@ class ConceptualCaptionsDataset(Dataset):
             caption = "A blank white image."
 
         if self.transform:
+
             image = np.array(image)
-            image = self.transform(image=image)["image"]
+            try:
+                
+                image = Image.fromarray(self.transform(image=image)["image"])
+            except Exception as e:
+                with open("exceptions.txt", "wa") as f:
+                    f.write(f"{e} on file {image_id} with {idx}")
+                    f.write("\n")
+
+                image = PIL.Image.new("RGB", (400, 400), (255, 255, 255))  # White placeholder
+                caption = "A blank white image."
 
         return {
-            "image": PIL.Image.fromarray(image),
+            "image": image,
             "text": caption,
             "image_path":f"{self.cache_dir}/{image_id}.jpg" # for janus pro only
         }
