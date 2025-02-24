@@ -47,6 +47,17 @@ downloaded_indices = sorted([int(p.stem) for p in data_dir.glob("*.jpg") if p.st
 
 downloaded_subset = dataset.select(downloaded_indices)
 
+# Define Augmentations with Albumentations
+transform = A.Compose([
+    A.HorizontalFlip(p=0.5),
+    A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=0.5),
+    A.Rotate(limit=30, p=0.7),
+    A.RandomScale(scale_limit=0.2, p=0.7),
+    A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
+    A.GaussianBlur(blur_limit=(3, 5), p=0.3),
+    A.CoarseDropout(num_holes_range=(4,8), fill="random", hole_height_range=(8,32), hole_width_range=(8,32), p=0.5)
+])
+
 dataset = ConceptualCaptionsDataset(
     downloaded_subset,
     downloaded_indices,
@@ -61,44 +72,43 @@ model_configs = [
         "processor_name": "Salesforce/blip-image-captioning-base",
         "decoder_class": BlipForConditionalGeneration,
         "decoder_name": "Salesforce/blip-image-captioning-base",
-        "requires_original": True
+        "requires_original": True,
+        "batch_size":256
     },
 
-    # GIT-BART
+    # GIT
     {
         "processor_name": "microsoft/git-base",
         "decoder_class": AutoModelForCausalLM,
         "decoder_name": "microsoft/git-base",
-        "tokenizer_name": "microsoft/git-base"
+        "tokenizer_name": "microsoft/git-base",
+        "batch_size":256
     },
 
     {
         "processor_name": "nlpconnect/vit-gpt2-image-captioning",
         "decoder_class": VisionEncoderDecoderModel,
         "decoder_name": "nlpconnect/vit-gpt2-image-captioning",
-        "processor_class": ViTImageProcessor
+        "processor_class": ViTImageProcessor,
+        "batch_size":256
     },
 
     {
         "processor_name": "google/vit-base-patch16-224-in21k",
         "decoder_class": BertModel,
         "decoder_name": "google-bert/bert-base-uncased",
-        "tokenizer_name":"google-bert/bert-base-uncased"
+        "tokenizer_name":"google-bert/bert-base-uncased",
+        "batch_size":256
     },
 
-    #LLAMA 
-    {
-        "processor_name": "meta-llama/Llama-3.2-11B-Vision",
-        "decoder_class": MllamaForConditionalGeneration,
-        "decoder_name": "meta-llama/Llama-3.2-11B-Vision"
-    },
 
-    # Swin-GPT2
+    # Swin-bert
     {
         "processor_name": "microsoft/swin-base-patch4-window12-384",
         "decoder_class": BertModel,
         "decoder_name": "google-bert/bert-base-uncased",
-        "tokenizer_name": "google-bert/bert-base-uncased"
+        "tokenizer_name": "google-bert/bert-base-uncased",
+        "batch_size":256
     },
 
     # # Pix2Struct
@@ -108,12 +118,20 @@ model_configs = [
     #     "decoder_name": "google/pix2struct-large"
     # },
 
+    #LLAMA 
+    {
+        "processor_name": "meta-llama/Llama-3.2-11B-Vision",
+        "decoder_class": MllamaForConditionalGeneration,
+        "decoder_name": "meta-llama/Llama-3.2-11B-Vision",
+        "batch_size":128
+    },
 
     # Qwen-VL
     {
         "processor_name": "Ertugrul/Qwen2-VL-7B-Captioner-Relaxed",
         "decoder_class": Qwen2VLForConditionalGeneration,
-        "decoder_name": "Qwen/Qwen2-VL-7B-Instruct"
+        "decoder_name": "Qwen/Qwen2-VL-7B-Instruct",
+        "batch_size":128
     },
 
     # DeepSeek Janus
@@ -122,19 +140,10 @@ model_configs = [
         "decoder_class": AutoModelForCausalLM,
         "decoder_name": "deepseek-ai/Janus-Pro-7B",
         "processor_class": VLChatProcessor,
-        "decoder_kwargs": {"trust_remote_code": True}
+        "decoder_kwargs": {"trust_remote_code": True},
+        "batch_size":128
     }
 ]
-# Define Augmentations with Albumentations
-transform = A.Compose([
-    A.HorizontalFlip(p=0.5),
-    A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=0.5),
-    A.Rotate(limit=30, p=0.7),
-    A.RandomScale(scale_limit=0.2, p=0.7),
-    A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-    A.GaussianBlur(blur_limit=(3, 5), p=0.3),
-    A.CoarseDropout(num_holes_range=(4,8), fill="random", hole_height_range=(8,32), hole_width_range=(8,32), p=0.5)
-])
 
 def get_lora_config(model):
     """
@@ -297,16 +306,12 @@ def train_model(model_config, dataset):
         processor_name=model_config["processor_name"],
         decoder_name=model_config["decoder_name"]
     )
-    print("-"*100)
-    print(f"Model: {model_config['processor_name']}, {model_config['decoder_name']}")
-    print(model.print_trainable_parameters())
-    print("-"*100)
     enable_grads(model)
 
     # Training Arguments
     training_args = TrainingArguments(
         output_dir=f"trainer_logs/{model_config['processor_name']}",
-        per_device_train_batch_size=16,
+        per_device_train_batch_size=model_config["batch_size"],
         auto_find_batch_size=True,
         num_train_epochs=2,
         learning_rate=5e-5,
@@ -319,7 +324,7 @@ def train_model(model_config, dataset):
         save_safetensors=False,
         optim="adafactor",
         gradient_checkpointing_kwargs={"use_reentrant":False},
-        gradient_accumulation_steps=4,
+        gradient_accumulation_steps=2,
     )
 
     
@@ -373,7 +378,7 @@ for idx, config in enumerate(model_configs):
             tokenizer = AutoTokenizer.from_pretrained(config["processor_name"])
 
     # if "Qwen" in config["processor_name"]:
-    #     processor = AutoProcessor.from_pretrained(config['processor_name'], max_pixels=512*28*28)
+    #     processor = AutoProcessor.from_pretrained(config['processor_name'], max_pixels=256*28*28)
         
     #LORA 
     lora_config = get_lora_config(model)
@@ -387,6 +392,11 @@ for idx, config in enumerate(model_configs):
     if "Janus-Pro-7B" not in config["decoder_name"]:
         model.gradient_checkpointing_enable() 
 
+    print("-"*100)
+    print(f"Model: {config['processor_name']}, {config['decoder_name']}")
+    print(model.print_trainable_parameters())
+    print("-"*100)
+
     # Train and save
     trained_model = train_model({
         "processor":processor,
@@ -394,7 +404,8 @@ for idx, config in enumerate(model_configs):
         "tokenizer": tokenizer,
         "requires_original": config.get("requires_original", False),
         "processor_name":config["processor_name"],
-        "decoder_name":config["decoder_name"]
+        "decoder_name":config["decoder_name"],
+        "batch_size": config["batch_size"]
     }, dataset)
     
     output_dir = (
