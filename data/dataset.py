@@ -41,20 +41,20 @@ class ConceptualCaptionsDataset(Dataset):
         image_path = os.path.join(self.cache_dir, f"{image_id}.jpg")
 
         # If image exists, load from disk
-        return PIL.Image.open(image_path).convert("RGB")
+        return PIL.Image.open(image_path).convert("RGB") if os.path.isdir(image_path) else None
 
-        raise ValueError(f"{image_path} does not exist please set prevalidation=True"
-                             "to delete corrupt images")
-
-        # Otherwise, download and save it
-        try:
-            request = urllib.request.Request(image_url, headers={"user-agent": "datasets"})
-            with urllib.request.urlopen(request, timeout=5) as req:
-                image = PIL.Image.open(io.BytesIO(req.read())).convert("RGB")
-                image.save(image_path, "JPEG")  # Save to cache
-            return image
-        except Exception:
-            return None  # Return None for failed downloads
+        # raise ValueError(f"{image_path} does not exist please set prevalidation=True"
+        #                      "to delete corrupt images")
+        #
+        # # Otherwise, download and save it
+        # try:
+        #     request = urllib.request.Request(image_url, headers={"user-agent": "datasets"})
+        #     with urllib.request.urlopen(request, timeout=5) as req:
+        #         image = PIL.Image.open(io.BytesIO(req.read())).convert("RGB")
+        #         image.save(image_path, "JPEG")  # Save to cache
+        #     return image
+        # except Exception:
+        #     return None  # Return None for failed downloads
 
     def _prevalidate_images(self):
         for idx in tqdm(range(len(self.dataset)), desc="initial_validation"):
