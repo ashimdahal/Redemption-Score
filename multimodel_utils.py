@@ -73,6 +73,7 @@ class MultimodalCollator(DataCollatorWithPadding):
             return{
                 "pixel_values": pixel_values,
                 "labels":text_inputs["input_ids"],
+                "label_names":text_inputs["input_ids"],
             }
 
         elif isinstance(self.processor, Pix2StructProcessor):
@@ -166,7 +167,6 @@ class MultimodalCollator(DataCollatorWithPadding):
                 padding="max_length"
             )
 
-        print(self.processor)
         labels = processed_outputs["input_ids"].clone() # Mask padding tokens.
         labels[labels == self.processor.tokenizer.pad_token_id] = -100
         
@@ -174,7 +174,8 @@ class MultimodalCollator(DataCollatorWithPadding):
             "pixel_values": processed_outputs["pixel_values"],
             "input_ids": processed_outputs["input_ids"],
             "attention_mask": text_inputs["attention_mask"],
-            "labels": labels
+            "labels": labels,
+            "label_names":labels
         }
 
 # Custom Model Wrapper
