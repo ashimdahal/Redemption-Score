@@ -98,30 +98,32 @@ def upload_training_artifacts(api, repo_id, processor_name):
 
 def create_model_card(repo_id, processor_name, decoder_name, is_peft):
     card_content = f"""
-        tags:
-        - multimodal
-        - vision
-        - nlp
-        license: apache-2.0
-        ---
+---
+tags:
+- multimodal
+- vision
+- nlp
+base_model: f{decoder_name}
+license: apache-2.0
+---
 
-    # {processor_name} + {decoder_name} Multimodal Model
+# {processor_name} + {decoder_name} Multimodal Model
 
-    ## Model Details
-        **Processor**: [{processor_name}](https://huggingface.co/{processor_name})  
-        **Decoder**: [{decoder_name}](https://huggingface.co/{decoder_name})  
-        {'**PEFT Adapter**: Yes – includes both adapter and merged versions.' if is_peft else ''}
+## Model Details
+**Processor**: [{processor_name}](https://huggingface.co/{processor_name})  
+**Decoder**: [{decoder_name}](https://huggingface.co/{decoder_name})  
+{'**PEFT Adapter**: Yes – includes both adapter and merged versions.' if is_peft else ''}
 
-    ## Usage
-        ```python
-        from transformers import AutoModel, AutoProcessor
+## Usage
+```python
+from transformers import AutoModel, AutoProcessor
 
-        {'# For PEFT adapter version:' if is_peft else ''}
-        {'model = AutoModel.from_pretrained("' + repo_id + '", subfolder="peft_adapter")' if is_peft else 'model = AutoModel.from_pretrained("' + repo_id + '")'}
-        processor = AutoProcessor.from_pretrained("{repo_id}")
+{'# For PEFT adapter version:' if is_peft else ''}
+{'model = AutoModel.from_pretrained("' + repo_id + '", subfolder="peft_adapter")' if is_peft else 'model = AutoModel.from_pretrained("' + repo_id + '")'}
+processor = AutoProcessor.from_pretrained("{repo_id}")
 
-        {'# For merged version (PEFT):' if is_peft else ''}
-        {'model = AutoModel.from_pretrained("' + repo_id + '")' if is_peft else ''}
+{'# For merged version (PEFT):' if is_peft else ''}
+{'model = AutoModel.from_pretrained("' + repo_id + '")' if is_peft else ''}
     """
     # Write the model card to a README.md file and upload it.
     readme_path = f"README_{processor_name.replace('/','-')}.md"
