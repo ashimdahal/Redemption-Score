@@ -172,7 +172,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
 dataset/
 results/
 trainer_logs/
 logs_tf_board/
+hf_token.txt
