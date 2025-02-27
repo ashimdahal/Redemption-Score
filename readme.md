@@ -77,13 +77,15 @@ conda activate captions
 1. Install necessary libraries
     `pip install -r requirements.txt`
 2. Download Dataset
-    `python download.py`
-3. Clean dataset 
-    ```bash
-    chmod +x ./clean_dataset.sh
-    ./clean_dataset.sh
     ```
-4. Ready to run the code 
-    ```python main.py```
+    # This is for the main training dataset python download.py 
+    python download.py --split validation
+    ```
+3. Clean dataset 
+    ```
+    python clean_dataset_python.py
+    ```
+4. Ready to run the code (in inference validation set)
+    ```python inference_test.py```
 
 Solve any errors based on peft error guide above.
