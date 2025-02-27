@@ -19,7 +19,7 @@ args = parser.parse_args()
 
 # Configuration
 DATASET_NAME = "google-research-datasets/conceptual_captions"
-SAVE_DIR = "dataset"
+SAVE_DIR = "dataset" if args.split == "train" else "valid_dataset"
 NUM_WORKERS = 8  # Increase based on your bandwidth
 RETRIES = 1
 USER_AGENT = get_datasets_user_agent()
