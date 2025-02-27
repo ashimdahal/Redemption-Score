@@ -10,6 +10,13 @@ from datasets.utils.file_utils import get_datasets_user_agent
 
 from PIL import Image
 
+import argparse
+
+parser = argparse.ArgumentParser(description='A simple example')
+parser.add_argument("--split", type=str, default="train", help="which split of the dataset to download")
+
+args = parser.parse_args()
+
 # Configuration
 DATASET_NAME = "google-research-datasets/conceptual_captions"
 SAVE_DIR = "dataset"
@@ -18,7 +25,7 @@ RETRIES = 1
 USER_AGENT = get_datasets_user_agent()
 
 # Load dataset
-dataset = load_dataset(DATASET_NAME, split="train")
+dataset = load_dataset(DATASET_NAME, split=args.split)
 
 # Create image directory
 os.makedirs(SAVE_DIR, exist_ok=True)
