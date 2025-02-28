@@ -7,15 +7,15 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from PIL import Image
 import torch
-from diffusers import StableDiffusionXLPipeline
+from diffusers import StableDiffusion3Pipeline
 from transformers import CLIPProcessor, CLIPModel
 from tqdm.auto import tqdm
 
 def setup_models():
     """Set up SDXL and CLIP models"""
     # Set up SDXL
-    sdxl_pipe = StableDiffusionXLPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-xl-base-1.0",
+    sdxl_pipe =StableDiffusion3Pipeline.from_pretrained(
+        "stabilityai/stable-diffusion-3-medium-diffusers",
         torch_dtype=torch.float16
     )
     sdxl_pipe = sdxl_pipe.to("cuda")
@@ -28,7 +28,7 @@ def setup_models():
 
 def generate_image(pipe, caption, output_path):
     """Generate image using SDXL"""
-    image = pipe(prompt=caption, num_inference_steps=25).images[0]
+    image = pipe(prompt=caption, num_inference_steps=50).images[0]
     image.save(output_path)
     return output_path
 
@@ -67,17 +67,16 @@ def adjust_model_name(model_name):
         return "GIT"
     elif "nlpconnect" in name_lower:
         return "ViT with GPT2"
-    elif "nourfaikh" in name_lower:
+    elif "nourfakih" in name_lower:
         return "ViT with GPT2"
-    elif "uf salesforce" in name_lower:
+    elif "salesforce" in name_lower:
         return "BLIP"
     else:
         return model_name
 
-def process_models():
+def process_models(output_dir):
     """Process one random sample from each model"""
     # Output directory
-    output_dir = "model_comparison"
     os.makedirs(output_dir, exist_ok=True)
     
     # Get model directories - FIXED PATH
@@ -187,102 +186,78 @@ def create_visualization(results, output_dir):
         print("No results to visualize.")
         return
     
-    # Increase figure size and spacing to accommodate multi-line captions
-    fig = plt.figure(figsize=(18, 5 * num_models))
+    # Adjust figure size to account for header row
+    fig = plt.figure(figsize=(18, 5 * (num_models + 1)))  # +1 for header row
     
-    # Add title
-    plt.suptitle("Model Caption Comparison with SDXL", fontsize=20, y=0.98)
+    # Create grid with dedicated header row
+    gs = gridspec.GridSpec(num_models + 1, 4,  # +1 row for headers
+                          height_ratios=[0.3] + [1]*num_models,  # header row height
+                          hspace=0.4, wspace=0.1)
     
-    # Create grid with more vertical spacing
-    gs = gridspec.GridSpec(num_models, 4, height_ratios=[1] * num_models,
-                           hspace=0.5, wspace=0.1)
-    
+    # Add header row
+    headers = ["Model", "Generated from\nPrediction", "Generated from\nReference", "Original Image"]
+    for j, header in enumerate(headers):
+        ax = fig.add_subplot(gs[0, j])
+        ax.set_title(header, fontsize=14, fontweight='bold', pad=0)
+        ax.axis('off')
+
+    # Process each model's row
     for i, data in enumerate(results):
-        # Column headers (only for first row)
-        if i == 0:
-            headers = ["Model", "Prediction Caption", "Reference Caption", "Base Image"]
-            for j, header in enumerate(headers):
-                ax = fig.add_subplot(gs[i, j])
-                ax.set_title(header, fontsize=14, fontweight='bold')
-                ax.axis('off')
-        
-        # 1) Model name
-        ax_model = fig.add_subplot(gs[i, 0])
-        ax_model.text(
-            0.5, 0.5,
-            data["model"],
-            fontsize=12, ha='center', va='center',
-            bbox=dict(facecolor='lightblue', alpha=0.3)
-        )
+        current_row = i + 1  # Start from row 1 after headers
+
+        # Model name column
+        ax_model = fig.add_subplot(gs[current_row, 0])
+        ax_model.text(0.5, 0.5, data["model"], 
+                     ha='center', va='center', fontsize=12,
+                     bbox=dict(facecolor='lightblue', alpha=0.3))
         ax_model.axis('off')
-        
-        # Helper function to wrap text
-        def wrap_caption(text, width=40):
-            return "\n".join(textwrap.wrap(text, width=width))
-        
-        # 2) Prediction
-        ax_pred = fig.add_subplot(gs[i, 1])
-        try:
-            pred_img = plt.imread(data["pred_img"])
-            ax_pred.imshow(pred_img)
-            ax_pred.set_title(f"Similarity: {data['pred_similarity']:.3f}", fontsize=10)
+
+        # Helper function for image + caption
+        def add_image_subplot(row, col, img_path, caption, similarity):
+            ax = fig.add_subplot(gs[row, col])
+            try:
+                img = plt.imread(img_path)
+                ax.imshow(img)
+                ax.set_title(f"Similarity: {similarity:.3f}", fontsize=9)
+            except Exception as e:
+                ax.text(0.5, 0.5, "Image missing", ha='center', va='center')
             
-            # Wrap and display the prediction text below the image
-            wrapped_prediction = wrap_caption(data["prediction"], width=40)
-            ax_pred.text(
-                0.5, -0.2,
-                wrapped_prediction,
-                fontsize=8, ha='center', va='top',
-                wrap=True, transform=ax_pred.transAxes
-            )
-        except Exception as e:
-            print(f"Error displaying prediction image: {e}")
-            ax_pred.text(0.5, 0.5, "Image display failed", ha='center', va='center')
-        ax_pred.axis('off')
-        
-        # 3) Reference
-        ax_ref = fig.add_subplot(gs[i, 2])
-        try:
-            ref_img = plt.imread(data["ref_img"])
-            ax_ref.imshow(ref_img)
-            ax_ref.set_title(f"Similarity: {data['ref_similarity']:.3f}", fontsize=10)
-            
-            # Wrap and display the reference text below the image
-            wrapped_reference = wrap_caption(data["reference"], width=40)
-            ax_ref.text(
-                0.5, -0.2,
-                wrapped_reference,
-                fontsize=8, ha='center', va='top',
-                wrap=True, transform=ax_ref.transAxes
-            )
-        except Exception as e:
-            print(f"Error displaying reference image: {e}")
-            ax_ref.text(0.5, 0.5, "Image display failed", ha='center', va='center')
-        ax_ref.axis('off')
-        
-        # 4) Base image
-        ax_base = fig.add_subplot(gs[i, 3])
+            # Add wrapped caption
+            wrapped = textwrap.fill(caption[:120], width=50)
+            ax.text(0.5, -0.15, wrapped, transform=ax.transAxes,
+                    ha='center', va='top', fontsize=8)#,bbox=dict(boxstyle='square,pad=1'))
+            ax.axis('off')
+
+        # Prediction column
+        add_image_subplot(current_row, 1, data["pred_img"], 
+                         data["prediction"], data["pred_similarity"])
+
+        # Reference column
+        add_image_subplot(current_row, 2, data["ref_img"], 
+                         data["reference"], data["ref_similarity"])
+
+        # Original image column
+        ax_base = fig.add_subplot(gs[current_row, 3])
         try:
             if os.path.exists(data["base_img"]):
-                base_img = plt.imread(data["base_img"])
-                ax_base.imshow(base_img)
+                img = plt.imread(data["base_img"])
+                ax_base.imshow(img)
             else:
-                ax_base.text(0.5, 0.5, "Base image not found", ha='center', va='center')
+                ax_base.text(0.5, 0.5, "Image not found", ha='center', va='center')
         except Exception as e:
-            print(f"Error displaying base image: {e}")
-            ax_base.text(0.5, 0.5, "Error loading image", ha='center', va='center')
+            ax_base.text(0.5, 0.5, "Load error", ha='center', va='center')
         ax_base.axis('off')
-    
-    plt.savefig(os.path.join(output_dir, "model_comparison.png"), dpi=300, bbox_inches='tight')
-    
+
+    plt.savefig(os.path.join(output_dir, "model_comparison.png"), 
+               dpi=300, bbox_inches='tight')
     print(f"Visualization saved to {os.path.join(output_dir, 'model_comparison.png')}")
 
 # Main execution
 if __name__ == "__main__":
-    results = process_models()
+    results = process_models("model_comparison")
+    results = process_models("model_comparison_1")
+    results = process_models("model_comparison_2")
     if not results:
         print("Script completed but no visualization was created due to errors.")
     else:
         print(f"Successfully processed {len(results)} models.")
-
-
