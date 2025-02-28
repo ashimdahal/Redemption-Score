@@ -1,0 +1,126 @@
+meta-llama-Llama-3.2-11B-Vision-Instruct_meta-llama-Llama-3.2-11B-Vision-Instruct
+
+━━━━━━━━━━━━━━━━ Metric ━━━━━━━━━━━━━━━━
+BLEU: 0.42%
+BLEU-1: 6.65%
+BLEU-2: 0.76%
+BLEU-3: 0.14%
+BLEU-4: 0.04%
+METEOR: 12.84%
+BERTScore Precision: -12.54%
+BERTScore Recall: 10.48%
+BERTScore F1: -1.46%
+ROUGE-1: 13.52%
+ROUGE-2: 2.07%
+ROUGE-L: 11.57%
+ROUGE-L sum: 12.14%
+Google BLEU: 1.94%
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+nlpconnect-vit-gpt2-image-captioning_nlpconnect-vit-gpt2-image-captioning
+
+━━━━━━━━━━━━━━━━ Metric ━━━━━━━━━━━━━━━━
+BLEU: 1.14%
+BLEU-1: 17.09%
+BLEU-2: 2.89%
+BLEU-3: 0.57%
+BLEU-4: 0.10%
+METEOR: 10.69%
+BERTScore Precision: 22.16%
+BERTScore Recall: 16.79%
+BERTScore F1: 19.51%
+ROUGE-1: 16.71%
+ROUGE-2: 2.91%
+ROUGE-L: 15.11%
+ROUGE-L sum: 15.11%
+Google BLEU: 4.59%
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+deepseek-ai-Janus-Pro-7B_deepseek-ai-Janus-Pro-7B
+
+━━━━━━━━━━━━━━━━ Metric ━━━━━━━━━━━━━━━━
+BLEU: 0.00%
+BLEU-1: 7.84%
+BLEU-2: 1.55%
+BLEU-3: 0.26%
+BLEU-4: 0.00%
+METEOR: 11.65%
+BERTScore Precision: -165.02%
+BERTScore Recall: -155.39%
+BERTScore F1: -159.92%
+ROUGE-1: 10.15%
+ROUGE-2: 1.94%
+ROUGE-L: 7.94%
+ROUGE-L sum: 7.89%
+Google BLEU: 2.20%
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NourFakih-image-captioning-Vit-GPT2-Flickr8k_NourFakih-image-captioning-Vit-GPT2-Flickr8k
+
+━━━━━━━━━━━━━━━━ Metric ━━━━━━━━━━━━━━━━
+BLEU: 0.79%
+BLEU-1: 15.56%
+BLEU-2: 1.87%
+BLEU-3: 0.29%
+BLEU-4: 0.05%
+METEOR: 12.25%
+BERTScore Precision: 16.43%
+BERTScore Recall: 17.45%
+BERTScore F1: 16.98%
+ROUGE-1: 15.94%
+ROUGE-2: 2.45%
+ROUGE-L: 14.37%
+ROUGE-L sum: 14.36%
+Google BLEU: 4.35%
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Salesforce-blip-image-captioning-base_Salesforce-blip-image-captioning-base
+
+━━━━━━━━━━━━━━━━ Metric ━━━━━━━━━━━━━━━━
+BLEU: 4.17%
+BLEU-1: 23.17%
+BLEU-2: 6.41%
+BLEU-3: 2.32%
+BLEU-4: 0.95%
+METEOR: 18.42%
+BERTScore Precision: 22.08%
+BERTScore Recall: 24.69%
+BERTScore F1: 23.30%
+ROUGE-1: 24.56%
+ROUGE-2: 7.11%
+ROUGE-L: 21.86%
+ROUGE-L sum: 21.84%
+Google BLEU: 7.14%
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+microsoft-git-base_microsoft-git-base
+
+━━━━━━━━━━━━━━━━ Metric ━━━━━━━━━━━━━━━━
+BLEU: 3.45%
+BLEU-1: 28.05%
+BLEU-2: 7.63%
+BLEU-3: 3.24%
+BLEU-4: 1.72%
+METEOR: 15.22%
+BERTScore Precision: 26.96%
+BERTScore Recall: 19.31%
+BERTScore F1: 23.11%
+ROUGE-1: 23.20%
+ROUGE-2: 6.53%
+ROUGE-L: 20.85%
+ROUGE-L sum: 20.85%
+Google BLEU: 6.73%
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ertugrul-Qwen2-VL-7B-Captioner-Relaxed_Qwen-Qwen2-VL-7B-Instruct
+
+━━━━━━━━━━━━━━━━ Metric ━━━━━━━━━━━━━━━━
+BLEU: 0.00%
+BLEU-1: 6.34%
+BLEU-2: 0.46%
+BLEU-3: 0.07%
+BLEU-4: 0.00%
+METEOR: 9.07%
+BERTScore Precision: -3.92%
+BERTScore Recall: 4.44%
+BERTScore F1: 0.30%
+ROUGE-1: 9.90%
+ROUGE-2: 0.80%
+ROUGE-L: 8.68%
+ROUGE-L sum: 8.69%
+Google BLEU: 1.78%
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
