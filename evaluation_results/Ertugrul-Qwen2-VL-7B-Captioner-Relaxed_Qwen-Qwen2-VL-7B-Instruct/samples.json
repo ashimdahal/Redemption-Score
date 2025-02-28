@@ -1,0 +1,142 @@
+[
+    {
+        "image_path": "valid_dataset/5.jpg",
+        "reference": "the - bedroom stone cottage can sleep people",
+        "prediction": "\"Modern living room with a cozy reading nook featuring a comfortable chair and a bookshelf filled with books.\""
+    },
+    {
+        "image_path": "valid_dataset/11.jpg",
+        "reference": "where 's the best place to show off your nails ? right in front of the castle , of course !",
+        "prediction": "A vibrant, stylized image featuring a person in a colorful outfit standing in front of a castle-like structure. The background is a mix of blue and purple hues, giving the scene a dramatic and artistic feel."
+    },
+    {
+        "image_path": "valid_dataset/14.jpg",
+        "reference": "illustration of a little girl taking a bath",
+        "prediction": "\"Close-up of a white and black keyboard with a black and white background.\""
+    },
+    {
+        "image_path": "valid_dataset/15.jpg",
+        "reference": "tv police procedural is filming on the street this week .",
+        "prediction": "The image shows a poster with a white background and a blue border. The text on the poster is in a mix of English and another language, possibly a foreign language. The text appears to be a series of words or phrases, but without a clear"
+    },
+    {
+        "image_path": "valid_dataset/17.jpg",
+        "reference": "what makeup to wear to a job interview",
+        "prediction": "\"Colorful abstract painting with vibrant colors and geometric shapes.\""
+    },
+    {
+        "image_path": "valid_dataset/20.jpg",
+        "reference": "pair of new bright orange modern sneakers isolated on a white background",
+        "prediction": "A pair of white shoes with a blue background featuring a watercolor painting of a fish and a palm tree."
+    },
+    {
+        "image_path": "valid_dataset/21.jpg",
+        "reference": "ask industry to do in our family room ?",
+        "prediction": "The image is a collage of various scenes and objects, including a building with a clock, a map of the world, a person riding a bicycle, a person holding a camera, a person riding a skateboard, a person riding a motorcycle, a person"
+    },
+    {
+        "image_path": "valid_dataset/24.jpg",
+        "reference": "a humorous call to arms against invention .",
+        "prediction": "\"White and black abstract painting with a blue sky and clouds.\""
+    },
+    {
+        "image_path": "valid_dataset/26.jpg",
+        "reference": "biological species with pup along a city",
+        "prediction": "\"White and blue watercolor painting of a serene beach scene with a lighthouse in the distance.\""
+    },
+    {
+        "image_path": "valid_dataset/28.jpg",
+        "reference": "keeping fans informed : since their birth in january this year , the couple have been keeping fans updated with the babies progress",
+        "prediction": "\"Colorful abstract painting with a mix of green, yellow, and red hues.\""
+    },
+    {
+        "image_path": "valid_dataset/32.jpg",
+        "reference": "dry fields on a summer day",
+        "prediction": "The image shows a poster with a colorful background featuring a landscape with mountains and a river. The text on the poster is in a foreign language, possibly Chinese or Japanese, and includes phrases such as \"\u5c71\" (mountain), \"\u6c34\" ("
+    },
+    {
+        "image_path": "valid_dataset/34.jpg",
+        "reference": "how many triangles are there in this picture",
+        "prediction": "A geometric pyramid with a triangular base and four sides, each consisting of a series of smaller squares."
+    },
+    {
+        "image_path": "valid_dataset/35.jpg",
+        "reference": "sand & sea : paradise on the prom - photo",
+        "prediction": "\"Sunset over a mountain range with a road cutting through the landscape.\""
+    },
+    {
+        "image_path": "valid_dataset/36.jpg",
+        "reference": "single cowboy guiding a line of horses through the desert",
+        "prediction": "\"An illustration of a white and blue airplane flying through a cloudy sky.\""
+    },
+    {
+        "image_path": "valid_dataset/38.jpg",
+        "reference": "smiling woman dressed in purple sari sitting beside a pink wall outside rural home",
+        "prediction": "The image shows a beautiful landscape with a river flowing through it. The river is surrounded by lush greenery and trees, creating a serene and picturesque scene. The water appears clear and reflective, capturing the surrounding foliage. The sky is mostly clear with a"
+    },
+    {
+        "image_path": "valid_dataset/45.jpg",
+        "reference": "stormy marriage : the couple appeared happy in this picture .",
+        "prediction": "The image shows a colorful abstract painting with various shapes and patterns. The background features a mix of geometric and organic forms, including circles, triangles, and abstract designs. The colors are vibrant and include shades of blue, green, yellow, and red."
+    },
+    {
+        "image_path": "valid_dataset/47.jpg",
+        "reference": "political map with the several counties wherea city is highlighted .",
+        "prediction": "A detailed map of the island of Ireland, showing counties and major cities."
+    },
+    {
+        "image_path": "valid_dataset/52.jpg",
+        "reference": "cranes at a high rise development",
+        "prediction": "The image shows a map with various lines and markings, including a prominent line labeled \"alamy\" in the center. The map appears to be a detailed geographical representation, possibly of a region or country, with various geographical features and place names."
+    },
+    {
+        "image_path": "valid_dataset/57.jpg",
+        "reference": "a commuter train travels next",
+        "prediction": "The image shows a white and blue watercolor painting of a beach scene with a lighthouse in the background. The sky is clear with a few clouds, and the ocean is calm with gentle waves. The lighthouse is illuminated, casting a warm glow"
+    },
+    {
+        "image_path": "valid_dataset/60.jpg",
+        "reference": "couple time along the west coast .",
+        "prediction": "The image shows a scenic landscape with a body of water, possibly a lake or sea, surrounded by mountains or hills. The sky is filled with clouds, and there is a prominent mountain range in the background. The water appears calm with gentle waves,"
+    },
+    {
+        "image_path": "valid_dataset/62.jpg",
+        "reference": "religious leadership title holds a private audience with pilgrims",
+        "prediction": "The image shows a white and black color scheme with a focus on a white background. The text \"AMERICAN\" is prominently displayed in bold letters, followed by \"FLYING\" in a smaller font. The text is arranged in a vertical format"
+    },
+    {
+        "image_path": "valid_dataset/63.jpg",
+        "reference": "building function is cool , but lacks some needed things for a total experience .",
+        "prediction": "The image shows a white plate with a red and white logo in the center. The logo consists of a white airplane flying over a red background with the word \"AIR\" written below it. The plate has a textured surface and appears to be made of"
+    },
+    {
+        "image_path": "valid_dataset/68.jpg",
+        "reference": "young bearded caucasian modern business man sitting in a bar , using laptop , looking downward , tapping on keyboard",
+        "prediction": "\"Two individuals engaged in a conversation at a table, with a window in the background.\""
+    },
+    {
+        "image_path": "valid_dataset/69.jpg",
+        "reference": "beach volleyball player defends against person during the women 's main draw .",
+        "prediction": "\"Close-up of a white and blue airplane model on a wooden surface.\""
+    },
+    {
+        "image_path": "valid_dataset/71.jpg",
+        "reference": "marking our way through the dunes as we neared the coast",
+        "prediction": "The image shows a poster with a white background featuring a black and white illustration of a person riding a bicycle. The text on the poster is in Chinese characters, and there is a logo in the center that reads \"Suzuki.\" The poster also"
+    },
+    {
+        "image_path": "valid_dataset/72.jpg",
+        "reference": "a silhouetted palm tree with boat tied to it rests on a beach that a man walks across during golden hour",
+        "prediction": "\"Crystal clear waters with a beautiful reflection of the sky.\""
+    },
+    {
+        "image_path": "valid_dataset/73.jpg",
+        "reference": "a time - lapse video of the sky .",
+        "prediction": "\"White and pink watercolor painting of a boat on a lake.\""
+    },
+    {
+        "image_path": "valid_dataset/74.jpg",
+        "reference": "scattered clouds moving rapidly in blue skies reflecting the sunrise , then vanishing to clear skies",
+        "prediction": "The image shows a wooden door with a metal handle and a wooden frame. The door appears to be closed, and there is a small window at the top of the door. The background is a plain wall with a light-colored texture."
+    }
+]

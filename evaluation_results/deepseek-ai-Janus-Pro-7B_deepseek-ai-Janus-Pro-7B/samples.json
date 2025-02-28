@@ -1,0 +1,62 @@
+[
+    {
+        "image_path": "valid_dataset/0.jpg",
+        "reference": "author : a life in photography -- in pictures",
+        "prediction": "\n\nThis image captures a scene from a film set, where a director is overseeing the filming of a scene involving two actors. The director is seated on a chair, dressed in a suit, and appears to be focused on the scene being shot. The actors are positioned on a set piece, with one sitting on a couch and the other lying on the floor. The setting is well-lit, with various equipment and crew members visible in the background."
+    },
+    {
+        "image_path": "valid_dataset/12.jpg",
+        "reference": "party in the park under cherry blossoms",
+        "prediction": "\nThis image shows a group of people gathered under cherry blossom trees, enjoying a day outdoors. The vibrant pink blossoms create a beautiful and serene atmosphere."
+    },
+    {
+        "image_path": "valid_dataset/16.jpg",
+        "reference": "that combines elements of a simple vegetable and dish",
+        "prediction": "\n\nThis image shows a white plate with a single green leaf placed on it. The leaf has a long stem and is positioned in the center of the plate. The background is black, which makes the green color of the leaf stand out."
+    },
+    {
+        "image_path": "valid_dataset/21.jpg",
+        "reference": "illustration of a little girl taking a bath",
+        "prediction": "\nThis image shows a child taking a bath in a bathtub filled with bubbles. The child is wearing a green shower cap decorated with flowers and is holding a yellow rubber duck. There are two bottles of liquid soap or shampoo placed on the edge of the bathtub."
+    },
+    {
+        "image_path": "valid_dataset/25.jpg",
+        "reference": "the new terminal on island with quiet sea and setting sun",
+        "prediction": "\n\nThis image shows a waterfront building with a modern architectural design. The structure features multiple levels with large windows and a green roof. It is situated on the edge of a body of water, providing a scenic view. The building appears to be a commercial or public space, possibly a restaurant, caf\u00e9, or a similar establishment. The calm water in the foreground reflects the building, adding to the overall aesthetic appeal of the scene."
+    },
+    {
+        "image_path": "valid_dataset/43.jpg",
+        "reference": "sandcastle beach on bright sky .",
+        "prediction": "\nThis image shows a sandcastle on a beach with a clear blue sky in the background."
+    },
+    {
+        "image_path": "valid_dataset/48.jpg",
+        "reference": "a humorous call to arms against invention .",
+        "prediction": "\nThis image shows a close-up of a gold-colored zipper on a piece of blue denim fabric. The zipper pull is prominently featured, with the fabric around it slightly out of focus."
+    },
+    {
+        "image_path": "valid_dataset/52.jpg",
+        "reference": "football player said after the game that his players had to learn lessons from the loss",
+        "prediction": "\nThis image shows a person wearing a red jacket and black pants, gesturing with their right hand. The jacket has a logo on the left chest and another on the right sleeve. The pants have a logo on the left leg. The person appears to be in a stadium or arena setting, with other people in the background."
+    },
+    {
+        "image_path": "valid_dataset/56.jpg",
+        "reference": "biological species with pup along a city",
+        "prediction": "\nThis image shows a young sea lion standing on a sandy beach, with rocks and other sea lions in the background."
+    },
+    {
+        "image_path": "valid_dataset/61.jpg",
+        "reference": "a man on a scooter , taking part in the rally",
+        "prediction": "\n\nThis black and white photograph captures a scene of a person riding a scooter on a wet street. The rider is wearing a helmet and appears to be navigating through a crowd of people who are standing on the sidewalk. The background is foggy, adding a mysterious atmosphere to the scene. The image conveys a sense of movement and urban life, with the wet pavement reflecting the light and adding to the overall mood."
+    },
+    {
+        "image_path": "valid_dataset/66.jpg",
+        "reference": "how many triangles are there in this picture",
+        "prediction": "\nIt appears that the image is a diagram of a geometric shape, specifically a pyramid with multiple triangular sections."
+    },
+    {
+        "image_path": "valid_dataset/69.jpg",
+        "reference": "sand & sea : paradise on the prom - photo",
+        "prediction": "\n\nThis image captures a serene coastal scene with a paved walkway bordered by a white balustrade. A lamp post stands prominently on the left side of the walkway, while the background showcases a lush green landscape leading up to a majestic mountain under a partly cloudy sky. The overall atmosphere is peaceful and inviting, perfect for a leisurely stroll."
+    }
+]

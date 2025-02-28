@@ -1,0 +1,152 @@
+[
+    {
+        "image_path": "valid_dataset/154.jpg",
+        "reference": "4k dogs play under sun , old cafe in the background",
+        "prediction": "Two dogs are playing in the grass ."
+    },
+    {
+        "image_path": "valid_dataset/493.jpg",
+        "reference": "digital art selected for the #",
+        "prediction": "A closeup of a person with a black and white mask on ."
+    },
+    {
+        "image_path": "valid_dataset/1008.jpg",
+        "reference": "your own private men 's store !",
+        "prediction": "A row of benches in a store ."
+    },
+    {
+        "image_path": "valid_dataset/1033.jpg",
+        "reference": "overweight woman running on a treadmill , vector also available .",
+        "prediction": "A woman in a white shirt and blue jeans is sitting on a chair ."
+    },
+    {
+        "image_path": "valid_dataset/1133.jpg",
+        "reference": "big airship in the air , 3d render",
+        "prediction": "A large white and blue airplane with a blue sky behind it ."
+    },
+    {
+        "image_path": "valid_dataset/1491.jpg",
+        "reference": "girl with flying flag behind the back",
+        "prediction": "A woman in a red and black uniform holds a flag ."
+    },
+    {
+        "image_path": "valid_dataset/1533.jpg",
+        "reference": "country artist passed away at 81 ; he lost battle to disease ; see all the details here",
+        "prediction": "A man in a blue shirt and jeans plays guitar ."
+    },
+    {
+        "image_path": "valid_dataset/1665.jpg",
+        "reference": "out to sea again and past .",
+        "prediction": "A group of people are fishing in the water ."
+    },
+    {
+        "image_path": "valid_dataset/1717.jpg",
+        "reference": "lady with person by painting artist",
+        "prediction": "A woman in a black coat is looking at a black object ."
+    },
+    {
+        "image_path": "valid_dataset/2090.jpg",
+        "reference": "person and the secret of screenshot",
+        "prediction": "A group of people are looking at a picture of a man and woman ."
+    },
+    {
+        "image_path": "valid_dataset/2144.jpg",
+        "reference": "heavy winter snow storm along the area north .",
+        "prediction": "A mountain climber is looking at the horizon ."
+    },
+    {
+        "image_path": "valid_dataset/2481.jpg",
+        "reference": "before the plunge into cool waters",
+        "prediction": "A boy in green shorts and a green shirt is standing on a rock ."
+    },
+    {
+        "image_path": "valid_dataset/2749.jpg",
+        "reference": "cat and a big fish on a plate",
+        "prediction": "A cat and a bird ."
+    },
+    {
+        "image_path": "valid_dataset/2779.jpg",
+        "reference": "cute book - makes you rethink why your not living on the coast ; unless you are already there ! :)",
+        "prediction": "A yellow and blue parasail is flying over the beach ."
+    },
+    {
+        "image_path": "valid_dataset/3814.jpg",
+        "reference": "national register of historic places location",
+        "prediction": "A group of people are standing in a ring with a red balloon ."
+    },
+    {
+        "image_path": "valid_dataset/4518.jpg",
+        "reference": "glass bottle of poison on a white background .",
+        "prediction": "A person with a skull and crossbones mask on ."
+    },
+    {
+        "image_path": "valid_dataset/5363.jpg",
+        "reference": "antelope on a background of sunset .",
+        "prediction": "A silhouette of a silhouette of a silhouette of a silhouette of a silhouette of a silhouette of a silhouette"
+    },
+    {
+        "image_path": "valid_dataset/5533.jpg",
+        "reference": "pitcher throws against sports team during the first inning of a baseball game",
+        "prediction": "A baseball player in a blue and white uniform is holding up his glove ."
+    },
+    {
+        "image_path": "valid_dataset/5772.jpg",
+        "reference": "northern cardinal perched on a branch during a heavy winter snow storm",
+        "prediction": "A redheaded squirrel is walking through the snow ."
+    },
+    {
+        "image_path": "valid_dataset/5796.jpg",
+        "reference": "fruits and vegetables for a healthy winter",
+        "prediction": "A group of freshly cut up plants ."
+    },
+    {
+        "image_path": "valid_dataset/5801.jpg",
+        "reference": "a nice lace dress for special occasions",
+        "prediction": "A woman in a blue dress is standing in front of a white shower ."
+    },
+    {
+        "image_path": "valid_dataset/5905.jpg",
+        "reference": "no ring in a white room - fashion film",
+        "prediction": "A colorful wall with a rainbow colored wall ."
+    },
+    {
+        "image_path": "valid_dataset/6504.jpg",
+        "reference": "worker drains water into a beaker with solution",
+        "prediction": "A person holds a bottle and puts a white marker on it ."
+    },
+    {
+        "image_path": "valid_dataset/6598.jpg",
+        "reference": "you know your life is at a new low when you cry instead of sing in the shower .",
+        "prediction": "A person is holding up a video camera ."
+    },
+    {
+        "image_path": "valid_dataset/6696.jpg",
+        "reference": "illustration of a big wooden house with a windmill on a white background vector",
+        "prediction": "A person is sitting on a boat in the middle of the woods ."
+    },
+    {
+        "image_path": "valid_dataset/6848.jpg",
+        "reference": "i saw this person today .",
+        "prediction": "A man and a woman are talking ."
+    },
+    {
+        "image_path": "valid_dataset/6908.jpg",
+        "reference": "student using a computer after a show to do a project",
+        "prediction": "A young girl is smiling at the camera ."
+    },
+    {
+        "image_path": "valid_dataset/6924.jpg",
+        "reference": "if you are either too afraid to explore with a new part or simply can not let go of that middle part hairstyle , no need to worry .",
+        "prediction": "A woman with a white face and black hair is smiling ."
+    },
+    {
+        "image_path": "valid_dataset/7035.jpg",
+        "reference": "very large yacht moored in the port",
+        "prediction": "A boat with a white sailboat is in the harbor ."
+    },
+    {
+        "image_path": "valid_dataset/7110.jpg",
+        "reference": "a swimmer wades in the water of a sea cave .",
+        "prediction": "A person is climbing a rock wall ."
+    }
+]

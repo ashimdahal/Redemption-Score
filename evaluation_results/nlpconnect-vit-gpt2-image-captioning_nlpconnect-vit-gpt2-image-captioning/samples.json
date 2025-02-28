@@ -1,0 +1,152 @@
+[
+    {
+        "image_path": "valid_dataset/146.jpg",
+        "reference": "silhouette of two enamored on the night sky background , illustration .",
+        "prediction": "a man standing in front of a water fountain "
+    },
+    {
+        "image_path": "valid_dataset/340.jpg",
+        "reference": "throwback to their first red carpet event ... crazy to think they 're already signing contracts ; it 's only the start .",
+        "prediction": "women standing on a beach "
+    },
+    {
+        "image_path": "valid_dataset/517.jpg",
+        "reference": "cover for an album with lace",
+        "prediction": "a blurry photo of a street sign "
+    },
+    {
+        "image_path": "valid_dataset/624.jpg",
+        "reference": "cupcakes from the award - winning bakery",
+        "prediction": "a display case with a variety of desserts on it "
+    },
+    {
+        "image_path": "valid_dataset/710.jpg",
+        "reference": "drops of water on a spider 's web on green foliage",
+        "prediction": "a red fire hydrant in a tree with leaves "
+    },
+    {
+        "image_path": "valid_dataset/758.jpg",
+        "reference": "what shaped ritual was anabsolute prohibition against fashioning a statue or a mask , originating with religious text",
+        "prediction": "a woman with a black and white wig "
+    },
+    {
+        "image_path": "valid_dataset/1077.jpg",
+        "reference": "they created a wall of shelves for trinkets to marvel at as you head up the stairs .",
+        "prediction": "a painting of a building with a waterfall "
+    },
+    {
+        "image_path": "valid_dataset/1399.jpg",
+        "reference": "mix all the dry ingredients in a large bowl",
+        "prediction": "a bowl of food on a table "
+    },
+    {
+        "image_path": "valid_dataset/1641.jpg",
+        "reference": "exterior shots of a sq ft tiny house",
+        "prediction": "a wooden door leading to a patio with a view of a house "
+    },
+    {
+        "image_path": "valid_dataset/1828.jpg",
+        "reference": "a farmer clears away grass from his wheat fields",
+        "prediction": "a man in a hat talking on a phone "
+    },
+    {
+        "image_path": "valid_dataset/2152.jpg",
+        "reference": "hand drawn skull with guns on a grungy background in vintage style",
+        "prediction": "a painting of a cat with a skull and crossbones "
+    },
+    {
+        "image_path": "valid_dataset/2503.jpg",
+        "reference": "all white cake with floral design",
+        "prediction": "a large white cake with a number of white roses on it "
+    },
+    {
+        "image_path": "valid_dataset/2639.jpg",
+        "reference": "woman consulting a map in a bus station .",
+        "prediction": "a woman is talking on her phone while a man is standing by a window "
+    },
+    {
+        "image_path": "valid_dataset/2730.jpg",
+        "reference": "esoteric eye on a colored background",
+        "prediction": "a picture of a cat with a reflection of a flower "
+    },
+    {
+        "image_path": "valid_dataset/2787.jpg",
+        "reference": "cows grazing in a pasture",
+        "prediction": "a field with trees and grass and a horse "
+    },
+    {
+        "image_path": "valid_dataset/2873.jpg",
+        "reference": "illustration of a competent brand",
+        "prediction": "a car with a picture of a man on it "
+    },
+    {
+        "image_path": "valid_dataset/3004.jpg",
+        "reference": "the yacht has a flag flying from the bow , but otherwise had no visible identifying markers or a name",
+        "prediction": "a large ship with a bunch of people in it "
+    },
+    {
+        "image_path": "valid_dataset/3081.jpg",
+        "reference": "ripe tomatoes vine 4k macro - super closeup detail shown with macro lens of a tomato plant with ripe tomatoes in the rain",
+        "prediction": "a small carrot is growing in a garden "
+    },
+    {
+        "image_path": "valid_dataset/3689.jpg",
+        "reference": "sink in the master bath .",
+        "prediction": "a bathroom with a mirror and a sink "
+    },
+    {
+        "image_path": "valid_dataset/3964.jpg",
+        "reference": "a lake shaped like a finger",
+        "prediction": "a boat is parked on the shore of a lake "
+    },
+    {
+        "image_path": "valid_dataset/4520.jpg",
+        "reference": "young woman on a bench talking with a mobile phone .",
+        "prediction": "a woman is looking at the city skyline "
+    },
+    {
+        "image_path": "valid_dataset/4690.jpg",
+        "reference": "happy business colleagues walking outside office & talking to each other",
+        "prediction": "two people are talking in a room "
+    },
+    {
+        "image_path": "valid_dataset/5199.jpg",
+        "reference": "person at a media event .",
+        "prediction": "a man in a crowd of people holding a cell phone "
+    },
+    {
+        "image_path": "valid_dataset/5650.jpg",
+        "reference": "chemical element blue and white for a wedding or classy party",
+        "prediction": "a table with a large group of white plates of food "
+    },
+    {
+        "image_path": "valid_dataset/5900.jpg",
+        "reference": "greeting card featuring the painting veils by person",
+        "prediction": "a woman in a dress with a flower "
+    },
+    {
+        "image_path": "valid_dataset/6445.jpg",
+        "reference": "still - life with a jug of cheese",
+        "prediction": "a table with a wine glass and a vase of fruit "
+    },
+    {
+        "image_path": "valid_dataset/6766.jpg",
+        "reference": "maritime decoration ideas - bring summer and sunshine into the house !",
+        "prediction": "a person sitting on a boat in the ocean "
+    },
+    {
+        "image_path": "valid_dataset/6827.jpg",
+        "reference": "funny head on shot of a puffin",
+        "prediction": "a bird standing on a rock in the wilderness "
+    },
+    {
+        "image_path": "valid_dataset/7016.jpg",
+        "reference": "old jewelry made to look like a bouquet of flowers .",
+        "prediction": "a large assortment of colorful flowers in a decorative pattern "
+    },
+    {
+        "image_path": "valid_dataset/7104.jpg",
+        "reference": "hot - air balloons landing in a field",
+        "prediction": "a large colorful kite flying in the sky "
+    }
+]

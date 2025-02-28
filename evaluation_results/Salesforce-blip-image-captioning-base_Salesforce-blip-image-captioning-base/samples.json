@@ -1,0 +1,152 @@
+[
+    {
+        "image_path": "valid_dataset/92.jpg",
+        "reference": "detail of a painting by person",
+        "prediction": "a painting of two women reading on a bed"
+    },
+    {
+        "image_path": "valid_dataset/143.jpg",
+        "reference": "pupils celebrate raising \u00a3 1, 735. 37 for organisation",
+        "prediction": "students holding up their numbers"
+    },
+    {
+        "image_path": "valid_dataset/514.jpg",
+        "reference": "business : breakfast at the bar",
+        "prediction": "a plate of food on a counter with a plate of pancakes"
+    },
+    {
+        "image_path": "valid_dataset/885.jpg",
+        "reference": "look for bold, what color are you going to paint your front door? do you freshen up your entry each spring?",
+        "prediction": "a black front door with a brick walkway"
+    },
+    {
+        "image_path": "valid_dataset/941.jpg",
+        "reference": "some examples of reticulate textures and other features on and near",
+        "prediction": "a map of the moon ' s surface"
+    },
+    {
+        "image_path": "valid_dataset/1255.jpg",
+        "reference": "biological species on a nest",
+        "prediction": "a baby owl sits in the nest of a tree"
+    },
+    {
+        "image_path": "valid_dataset/1311.jpg",
+        "reference": "praying hands tattoo designs for men silence the mind",
+        "prediction": "a man with a tattoo on his arm"
+    },
+    {
+        "image_path": "valid_dataset/1463.jpg",
+        "reference": "a finished custom order fresh off the sewing machine!",
+        "prediction": "a quilted canadian flag quilt on a table"
+    },
+    {
+        "image_path": "valid_dataset/1857.jpg",
+        "reference": "fence topped with barbed wire on a gloomy and cloudy day",
+        "prediction": "barbed fence with a cloudy sky in the background - stock image"
+    },
+    {
+        "image_path": "valid_dataset/1912.jpg",
+        "reference": "young couples sit and neck in the backseat of a convertible car.",
+        "prediction": "two women sitting in a car with their heads in their hands"
+    },
+    {
+        "image_path": "valid_dataset/2233.jpg",
+        "reference": "hand drawn sketch of a handshake.",
+        "prediction": "hand drawn sketch of a couple holding hands"
+    },
+    {
+        "image_path": "valid_dataset/2428.jpg",
+        "reference": "people having discussions inside a conference room.",
+        "prediction": "a group of people sitting around a glass wall"
+    },
+    {
+        "image_path": "valid_dataset/2512.jpg",
+        "reference": "pirates of the caribbean skull tattoo",
+        "prediction": "a pirate skull with a banda and a cross on the back"
+    },
+    {
+        "image_path": "valid_dataset/2530.jpg",
+        "reference": "actor at the movie premiere.",
+        "prediction": "person at the premiere of her new movie ` ` ` ` ` ` ` ` ` ` ` `"
+    },
+    {
+        "image_path": "valid_dataset/2581.jpg",
+        "reference": "a skier jumps, spins in mid air before landing successfully on the slope, pan shot, slow motion",
+        "prediction": "a man in black jacket skiing down a slope"
+    },
+    {
+        "image_path": "valid_dataset/2712.jpg",
+        "reference": "models walk the ramp at collection at the edition.",
+        "prediction": "a model walks the ramp at the fashion show"
+    },
+    {
+        "image_path": "valid_dataset/2974.jpg",
+        "reference": "the entrance of the building.",
+        "prediction": "the inside of a minecraft house minecraft house, minecraft house, minecraft house, mine"
+    },
+    {
+        "image_path": "valid_dataset/3103.jpg",
+        "reference": "cheerleaders, big and small, support their team at a home game.",
+        "prediction": "the cheer team poses for a photo"
+    },
+    {
+        "image_path": "valid_dataset/3146.jpg",
+        "reference": "barred rocks this is the type of chicken i have",
+        "prediction": "a chicken standing in the grass near some trees"
+    },
+    {
+        "image_path": "valid_dataset/3340.jpg",
+        "reference": "road traffic on a highway.",
+        "prediction": "a truck is driving down the highway"
+    },
+    {
+        "image_path": "valid_dataset/3493.jpg",
+        "reference": "a bouquet of fresh flowers single icon in black style for design.",
+        "prediction": "a bouquet of roses in black and white colors"
+    },
+    {
+        "image_path": "valid_dataset/3595.jpg",
+        "reference": "just like one of those estates where all the houses look the same",
+        "prediction": "a woman standing in front of a fence"
+    },
+    {
+        "image_path": "valid_dataset/4504.jpg",
+        "reference": "pulling their weight : the club hosts its annual tug of war.",
+        "prediction": "a group of people playing on the beach"
+    },
+    {
+        "image_path": "valid_dataset/4560.jpg",
+        "reference": "a homeless man sleeping on a park bench",
+        "prediction": "a man sleeping on a bench in the park - stock photo"
+    },
+    {
+        "image_path": "valid_dataset/4616.jpg",
+        "reference": "still life with wedding rings and a daisy",
+        "prediction": "a wedding ring and a flower on a rock in the mountains"
+    },
+    {
+        "image_path": "valid_dataset/5718.jpg",
+        "reference": "the pattern of blue drops of rain",
+        "prediction": "seam pattern with drops of water on a white background"
+    },
+    {
+        "image_path": "valid_dataset/5818.jpg",
+        "reference": "view back from the water",
+        "prediction": "a beach with palm trees and a blue sky"
+    },
+    {
+        "image_path": "valid_dataset/6079.jpg",
+        "reference": "myself and the newlyweds at wedding that person at a private residence",
+        "prediction": "a man and woman posing for a photo in a tent"
+    },
+    {
+        "image_path": "valid_dataset/6807.jpg",
+        "reference": "golden balloons float above a dusky skyline in striking images",
+        "prediction": "a city with balloons floating in the air"
+    },
+    {
+        "image_path": "valid_dataset/6901.jpg",
+        "reference": "arriving at driving through protected site.",
+        "prediction": "a car is parked in front of a sign"
+    }
+]

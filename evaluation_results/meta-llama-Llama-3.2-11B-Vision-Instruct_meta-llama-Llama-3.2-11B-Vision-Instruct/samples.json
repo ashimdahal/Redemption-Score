@@ -1,0 +1,152 @@
+[
+    {
+        "image_path": "valid_dataset/19.jpg",
+        "reference": "the dentist drill the tooth with a turbine",
+        "prediction": "I don't think I have an image to work with. This conversation just started. Can you provide the image you'd like me to work with? I can then provide a suitable caption."
+    },
+    {
+        "image_path": "valid_dataset/22.jpg",
+        "reference": "sandcastle beach on bright sky.",
+        "prediction": "Here are a few options:\n\n1. \"Tides of the Past\"\n2. \"Sand Castle Kingdom\"\n3. \"A Castle in the Sand\"\n4. \"Beachy Boechnan\"\n5 \"Seaside Sentimental"
+    },
+    {
+        "image_path": "valid_dataset/23.jpg",
+        "reference": "cowboy boots are a major hit for spring and summer!",
+        "prediction": "Here are a few options:\n\n1. \"Spring in the city: a lovely spring dress and boots combo\"\n2. \"Boo-boots and a dress: a perfect springtime look\"\n3. \"Springing into spring style: boots and"
+    },
+    {
+        "image_path": "valid_dataset/43.jpg",
+        "reference": "the description of this sculpture is in the previous photo.",
+        "prediction": "I don't have an image to provide a caption for. However, I can help you come up with a few ideas for a caption for a statue of a horse, like the one you might be thinking of.\n\nHere are a\u00a0few options:\n\n"
+    },
+    {
+        "image_path": "valid_dataset/45.jpg",
+        "reference": "stormy marriage : the couple appeared happy in this picture.",
+        "prediction": "A man and woman, both in their 60s, with a happy, casual air, standing in front of a blue dumpster and a car, with a sunny, outdoor setting. They\u2019re both wearing casual, casual clothes, with a few\u00a0"
+    },
+    {
+        "image_path": "valid_dataset/75.jpg",
+        "reference": "a skull and cross bones pirate flag blows in the wind",
+        "prediction": "Here are a few options:\n\n1. \"Sailing the seven seas...or at least my backyard!\"\n2. \"Bubu (that\u2019s me)\u00a0 Pirate of the\u00a0 \u2018\u201d\u00a0\u00a0\u2026\n3. \u201cDive? No!"
+    },
+    {
+        "image_path": "valid_dataset/81.jpg",
+        "reference": "creative fan - made movie posters as good or better than the real thing?",
+        "prediction": "A collection of movie posters reimagined as movie posters for other movies, using the style of famous directors like\u00a0Quirququor\n\nHere are some possible captions:\n\n* \"Return of the Jedi:\u00a0The Force\u00a0that\u00a0reall"
+    },
+    {
+        "image_path": "valid_dataset/96.jpg",
+        "reference": "tourist attraction the gardens gifted by fashion business to the city",
+        "prediction": "\"Serenity in the Moroccan Garden\""
+    },
+    {
+        "image_path": "valid_dataset/100.jpg",
+        "reference": "logo, golden important person on a black background -- stock vector #",
+        "prediction": "I don\u2019t see an image. Can you please share the image you\u2019d like me to caption? I\u2019d be happy to help!"
+    },
+    {
+        "image_path": "valid_dataset/103.jpg",
+        "reference": "the vivid use of color to give life to every type of flower and plants.",
+        "prediction": "Here are a few ideas for a caption to the image:\n\n1. **Tropical Paradise Found**: \"A haven of beauty and tranquility.\"\n2. **Florally Goodness**: \"A lush paradise of flowers and leaves.\"\n3. **"
+    },
+    {
+        "image_path": "valid_dataset/107.jpg",
+        "reference": "sunny with a chance of broccoli",
+        "prediction": "Here are a few options:\n\n1. \"Sunglasses on a broccoli:\u00a0\u00a0\"I love you\u00a0\u00a0like\u00a0\u00a0Summer\u00a0\u00a0to\u00a0\u00a0\u2026\nI\u00a0\u00a0mean\u00a0\u00a0my\u00a0\u00a0for\u00a0\u00a0\u2026\n\u2026\u00a0\u00a0\u2026\n"
+    },
+    {
+        "image_path": "valid_dataset/115.jpg",
+        "reference": "person in a leather jacket riding a motorcycle on the road",
+        "prediction": "Here are a few options:\n\n* \"Ride Together, Live Together\"\n* \"Honeymooners on Two Wheels\"\n* \"Picking up where we left off\"\n* \"Cruising into Love\"\n* \"Ride, Explore,"
+    },
+    {
+        "image_path": "valid_dataset/149.jpg",
+        "reference": "group of friends celebrating something in the restaurant, evening",
+        "prediction": "A group of friends enjoying a night out at an outdoor caf\u00e9, raising their glasses of wine and beer in a toast to good health and good company."
+    },
+    {
+        "image_path": "valid_dataset/155.jpg",
+        "reference": "the mole is peaking out of leaves",
+        "prediction": "I don't have an image to provide a caption for. Is there something specific you'd like me to help you with?"
+    },
+    {
+        "image_path": "valid_dataset/176.jpg",
+        "reference": "flowers on the ground in spring",
+        "prediction": "Here are a few options:\n\n1. \"Mushroom Magic\"\n2. \"Fungi Frenarosse\"\n3. \"Lilac Petals\"\n4. \"Purple Hush\"\n5. \"Aururigous\"\n"
+    },
+    {
+        "image_path": "valid_dataset/268.jpg",
+        "reference": "make sure not to let your chihuahua be alone in a space with a big dog.",
+        "prediction": "I don\u2019t have an image to provide a caption for. You could share one with me, and I can help you come up with a fitting caption for it!"
+    },
+    {
+        "image_path": "valid_dataset/387.jpg",
+        "reference": "woman rides on the car at high speed",
+        "prediction": "A woman driving a car on a winding road with a scenic view of trees and a church in the distance."
+    },
+    {
+        "image_path": "valid_dataset/390.jpg",
+        "reference": "making an offer on a property -- where to start",
+        "prediction": "Here are a few options:\n\n1. \"A new face in the neighborhood.\"\n2. \"The doorbell rings, and everything changes.\"\n3. \"A new chapter in her life begins.\"\n4. \"A knock on the door, a new"
+    },
+    {
+        "image_path": "valid_dataset/410.jpg",
+        "reference": "young attractive woman in white casual clothes using tablet while sitting in chair in the living room",
+        "prediction": "A woman in a white room, barefoot and holding a phone, sitting in an armchair, surrounded by plants and candles, with a bed and a plant in the background."
+    },
+    {
+        "image_path": "valid_dataset/490.jpg",
+        "reference": "person sitting at a mobile kitchen in the grounds",
+        "prediction": "A Buddhist Monk Meditating in front of a Food Cart\n\nThis image shows a Buddhist monk sitting on a chair in front of a food cart, selling food and drinks to customers. \n\nHere are a few possible captions for the image:\n\n1. \""
+    },
+    {
+        "image_path": "valid_dataset/502.jpg",
+        "reference": "mountains : learning about the earth",
+        "prediction": "A picture of a mountain range, with snow-capped peaks and a blue sky. \n\n**\"MOUNTAINS\"**"
+    },
+    {
+        "image_path": "valid_dataset/506.jpg",
+        "reference": "person - a new introduction this rare oak grows to be a cone shaped, small tree with fiery red and orange autumn colours.",
+        "prediction": "The image depicts a tree with vibrant red and yellow leaves, set against a gray sky. The tree is the central focus of the image, with its branches and leaves taking up most of the frame.\n\n* The tree is the main subject of the image"
+    },
+    {
+        "image_path": "valid_dataset/517.jpg",
+        "reference": "cover for an album with lace",
+        "prediction": "\"Old Book Cover\" or \"Page from a Old Book\" or \"Leather Bound Book Cover\" or \"Antique Book Cover\" or \"Old Book Cover with Lace\""
+    },
+    {
+        "image_path": "valid_dataset/518.jpg",
+        "reference": "crews work from both sides to clear snow.",
+        "prediction": "\"Snowploughs and excavators work to clear a snow-studded road in the Canadian Rockies.\""
+    },
+    {
+        "image_path": "valid_dataset/570.jpg",
+        "reference": "typical houses in a countryside small town as seen",
+        "prediction": "\"Laundry Day: A Colorful Village Scene\""
+    },
+    {
+        "image_path": "valid_dataset/598.jpg",
+        "reference": "sitting room in shades of pale green and beige with pair of matching lamps either side of sofa.",
+        "prediction": "\"Cozy Corner\"\n \nCozy Corner\n\nA comfortable and inviting living room with a neutral color scheme, a couch with plenty of pillows, a coffee table with a coffee cup and a magazine, and a painting above the sofa."
+    },
+    {
+        "image_path": "valid_dataset/623.jpg",
+        "reference": "vector illustration of a banner for pongal celebration.",
+        "prediction": "Here are a few options:\n\n1. **\"Wishing you a Sweet and Joyful Pongal!\"**\n2. **\"Pongal Celebrations: A Time for Joy and Love!\"**\n3. **\"Pongal: A"
+    },
+    {
+        "image_path": "valid_dataset/665.jpg",
+        "reference": "candle's flame that blown by the wind with dark background",
+        "prediction": "Here are a few options:\n\n1. \"Glowing Embrace\"\n2. \"Candlelight Serenity\"\n3. \"Flicker of Hope\"\n4. \"Cenendililum\" (a play on the word \""
+    },
+    {
+        "image_path": "valid_dataset/705.jpg",
+        "reference": "geographical feature category at the seaside resort",
+        "prediction": "Here are a few options:\n\n1. \"Sandy Beach at High Tide\"\n2. \"Beachfront Homes and Beachside Cabas...\n3. \"Coastal Homes and Beachside Palms\"\n4. \"Beachfront Properties and"
+    },
+    {
+        "image_path": "valid_dataset/715.jpg",
+        "reference": "young woman relaxing by the lake at sunset, harms outstretched",
+        "prediction": "Here are a few options:\n\n* \"Sailing into the sunset\"\n* \"A moment of serenity\"\n* \"Lake life\"\n* \"Sailing away\"\n* \"Peaceful evening\"\n* \"Lake views\"\n* \"Peaceful summer evening"
+    }
+]
