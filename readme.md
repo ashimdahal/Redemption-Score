@@ -1,4 +1,4 @@
-# Introduction
+# Introduction to future work
 A deep comparison of 8 VLMs (some are not VLMs by nature but could be made into one) fine tuned for image dataset. VLMs tested include the following:
 ```python
     # BLIP
