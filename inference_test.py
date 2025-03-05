@@ -63,19 +63,20 @@ requires_original_implementation = (
 )
 
 @torch.no_grad()
+@torch.inference_mode()
 def evaluate_model(
     model,
     processor,
     tokenizer,
     config,
-    batch_size=32,
+    batch_size=2,
     save_samples=30,
     device=torch.device("cuda")
 ):
     if isinstance(model, MultimodalModel) and isinstance(model.decoder, MultiModalityCausalLM):
         num_samples=50
     else:
-        num_samples=500
+        num_samples=50
     dataset = load_dataset("google-research-datasets/conceptual_captions", split="validation")
     downloaded_indices = sorted([int(p.stem) for p in data_dir.glob("*.jpg") if p.stem.isdigit()])
 
@@ -83,6 +84,7 @@ def evaluate_model(
 
 # Define Augmentations with Albumentations
     transform = A.Compose([
+        A.LongestMaxSize(max_size=512),
         A.HorizontalFlip(p=0.5),
     ])
 

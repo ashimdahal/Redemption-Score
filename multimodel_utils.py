@@ -25,25 +25,17 @@ system_message = """You are a Vision Language Model specialized in captioning or
 def format_data(sample):
     return [
         {
-            "role": "system",
-            "content": [{"type": "text", "text": system_message}],
-        },
-        {
             "role": "user",
             "content": [
                 {
                     "type": "image",
-                    "image": sample["image"],
+                    "image": sample["image_path"],
                 },
                 {
                     "type": "text",
-                    "text": "describe the image",
+                    "text": "Give caption to the image",
                 },
             ],
-        },
-        {
-            "role": "assistant",
-            "content": [{"type": "text", "text": sample["text"]}],
         },
     ]
 # Custom Data Collator to handle multimodal inputs
@@ -53,7 +45,7 @@ class MultimodalCollator(DataCollatorWithPadding):
         self.processor = processor
         
         if isinstance(self.processor, MllamaProcessor):
-            self.text_prompt = "<|image|> Describe this image."
+            self.text_prompt = "<|image|> Give caption to this image like a normal human being. "
 
     def __call__(self, features):
         # Process text
@@ -63,7 +55,7 @@ class MultimodalCollator(DataCollatorWithPadding):
             padding="max_length", 
             truncation=True, 
             return_tensors="pt",
-            max_length=512
+            # max_length=512
         )
 
         # Process images
@@ -88,7 +80,7 @@ class MultimodalCollator(DataCollatorWithPadding):
             } 
         elif isinstance(self.processor, (Qwen2VLProcessor)):
             features = [format_data(feature) for feature in features]
-            texts = [self.processor.apply_chat_template(example, tokenize=False) for example in features]
+            texts = [self.processor.apply_chat_template(example, tokenize=False, add_generation_prompt=True) for example in features]
 
             image_inputs = [process_vision_info(example)[0] for example in features]
             processed_outputs = self.processor(
@@ -97,55 +89,63 @@ class MultimodalCollator(DataCollatorWithPadding):
                 return_tensors="pt",
                 padding=True
             )
-            labels = processed_outputs["input_ids"].clone()
-            labels[labels == self.tokenizer.pad_token_id] = -100
-            image_tokens = [151652, 151653, 151655]
-            for image_token_id in image_tokens:
-                labels[labels == image_token_id] = -100
-
-            processed_outputs["labels"] = labels
+            # labels = processed_outputs["input_ids"].clone()
+            # labels[labels == self.tokenizer.pad_token_id] = -100
+            # image_tokens = [151652, 151653, 151655]
+            # for image_token_id in image_tokens:
+            #     labels[labels == image_token_id] = -100
+            #
+            processed_outputs["labels"] = text_inputs["input_ids"]
             return processed_outputs
 
         elif isinstance(self.processor, MllamaProcessor):
             #needs explicitly set same token size on input and output
-            processed_outputs = self.processor(
-                images=images,
-                text=[self.text_prompt] * len(images),
-                return_tensors="pt",
-                max_length=512,
-                truncation=True,
-                padding="max_length"
-            )
+            features = [format_data(feature) for feature in features]
+            conversations = [self.processor.apply_chat_template(example, tokenize=False, add_generation_prompt=True) for example in features]
+            # conversations = "<|image|> Caption this image."
+            processed_outputs = self.processor(text=conversations, images=images, return_tensors="pt")
+            # processed_outputs = self.processor(
+            #     images=images,
+            #     text=[self.text_prompt] * len(images),
+            #     return_tensors="pt",
+            #     max_length=512,
+            #     truncation=True,
+            #     padding="max_length"
+            # )
             processed_outputs["labels"] = text_inputs["input_ids"]
             return processed_outputs
         elif isinstance(self.processor, VLChatProcessor):
             conversations = [
                 {
                     "role": "<|User|>",
-                    "content": f"<image_placeholder>\nDescribe this image.",
-                    "images": [image],
+                    "content": f"<image_placeholder>\ncaption this image.",
+                    "images": [image["image_path"]],
                 }
-                for image in images
+                for image in features
             ]
             processed_outputs = self.processor(
                 conversations=conversations,
                 images=images, 
+                paddint=True,
+                return_tensors="pt",
+                truncation=True,
                 force_batchify=True
             )
-            labels = processed_outputs["input_ids"].clone()
-            labels[labels == self.tokenizer.pad_token_id] = -100
-            image_tokens = [self.processor.tokenizer.convert_tokens_to_ids(self.processor.image_token)]
-            for image_token_id in image_tokens:
-                labels[labels == image_token_id] = -100
+            labels = text_inputs["input_ids"]
+            # labels[labels == self.tokenizer.pad_token_id] = -100
+            # image_tokens = [self.processor.tokenizer.convert_tokens_to_ids(self.processor.image_token)]
+            # for image_token_id in image_tokens:
+            #     labels[labels == image_token_id] = -100
 
             processed_outputs["labels"] = labels
             return {
                 "pixel_values":processed_outputs["pixel_values"],
-                "labels":processed_outputs["input_ids"],
-                "attention_mask":processed_outputs["attention_mask"],
+                "labels":labels,
+                # "attention_mask":processed_outputs["attention_mask"],
                 "images_emb_mask":processed_outputs["images_emb_mask"],
                 "images_seq_mask":processed_outputs["images_seq_mask"],
-                "input_ids":processed_outputs["input_ids"]
+                "input_ids":processed_outputs["input_ids"],
+                # "sft_format":processed_outputs["sft_format"]
             }
         elif (isinstance(self.processor, BlipProcessor)):
             processed_outputs = self.processor(
@@ -225,7 +225,6 @@ class MultimodalModel(torch.nn.Module):
             )
         else:
             # fallback 
-            print(self.orig_instance)
             inputs_embeds = self.decoder.get_input_embeddings()(kwargs["input_ids"])
             
             # Combine visual and text embeddings

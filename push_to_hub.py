@@ -15,7 +15,9 @@ ADAPTER_FILES = [
     "tokenizer.json",
     "tokenizer_config.json",
     "training_args.bin",
-    "trainer_state.json"
+    "trainer_state.json",
+    # "model.safetensors",
+    "config.json"
 ]
 
 def upload_all_models():
@@ -34,7 +36,7 @@ def upload_all_models():
         # Get processor name from directory name
         processor_name, decoder_name = parse_components(model_dir)
 
-        uploaded_files = upload_peft_model_files(model_path, model_dir, api, repo_id, processor_name)
+        uploaded_files = upload_model_files(model_path, model_dir, api, repo_id, processor_name)
         tensorboard_exists = upload_training_artifacts(api, repo_id, processor_name)
         upload_model_card(api, repo_id, processor_name, decoder_name)
         
@@ -42,13 +44,25 @@ def upload_all_models():
         print(f"Uploaded files: {', '.join(uploaded_files)}")
         print(f"TensorBoard uploaded: {tensorboard_exists}")
         print(f"Missing files: {', '.join(set(ADAPTER_FILES) - uploaded_files)}\n")
+
+        if "swin" in model_dir or "vit-base" in model_dir:
+            decoder_repo_id = f"{ORG_NAME}/decoder-{model_dir}"
+            create_repo(decoder_repo_id, exist_ok=True, token=HF_TOKEN, private=True)
+            upload_model_files(
+                model_path, model_dir, api, decoder_repo_id, processor_name, [
+                    "model.safetensors",
+                    "config.json",
+                    "tokenizer.json"
+                ]
+            )
+            upload_model_card(api, decoder_repo_id, processor_name, decoder_name)
         
-def upload_peft_model_files(model_path, model_dir, api, repo_id, processor_name):
+def upload_model_files(model_path, model_dir, api, repo_id, processor_name, files_to_upload=ADAPTER_FILES):
     # Track which files we successfully uploaded
     uploaded_files = set()
     
     # Selectively upload only adapter files from results folder
-    for file in ADAPTER_FILES:
+    for file in files_to_upload:
         file_path = os.path.join(model_path, file)
         if os.path.exists(file_path):
             api.upload_file(
@@ -62,7 +76,7 @@ def upload_peft_model_files(model_path, model_dir, api, repo_id, processor_name)
             print(f"Uploaded {file} from results folder")
     
     # Check if we need to find missing files from the checkpoint
-    missing_files = set(ADAPTER_FILES) - uploaded_files
+    missing_files = set(files_to_upload) - uploaded_files
     if missing_files and ("adapter_model.safetensors" in missing_files or 
                           "adapter_model.bin" in missing_files or
                           "training_args.bin" in missing_files or 
