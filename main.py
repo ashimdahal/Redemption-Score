@@ -146,7 +146,7 @@ model_configs = [
     }
 ]
 
-def get_lora_config(resume_from_checkpoint=True):
+def get_lora_config(model):
     """
     Returns a LoRA configuration tailored to the underlying model's architecture.
     The function inspects the model's type (and optionally its config) and sets
@@ -214,81 +214,60 @@ def prepare_janus_pro(model):
     return model
 
 
-def select_best_model(processor, decoder, tokenizer, processor_name, decoder_name):
-    """
-    Selects the appropriate model architecture based on encoder and decoder compatibility.
-    
-    Args:
-        processor: The image processor/feature extractor
-        decoder: The decoder model
-        tokenizer: The tokenizer for text processing
-    
-    Returns:
-        Either a VisionEncoderDecoderModel or MultimodalModel instance
-    """
+def select_best_model_inference(
+    config
+):
     # List of model types that work with VisionEncoderDecoderModel
-    vision_encoder_decoder_compatible = (
-        BertLMHeadModel,
-        GPT2LMHeadModel,
-        BertModel
-    )
-    # List of models that require their original implementation
-    requires_original_implementation = (
-        BlipForConditionalGeneration,
-        Pix2StructForConditionalGeneration,
-        Qwen2VLForConditionalGeneration,
-        LlamaForCausalLM,  
-        MllamaForConditionalGeneration
-    )
     
-    try:
-        orig_instance = decoder.base_model.model if isinstance(decoder, PeftModel) else decoder
-        # Check if decoder is compatible with VisionEncoderDecoderModel
-        if isinstance(orig_instance, vision_encoder_decoder_compatible):
-            model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(
-                processor_name,
-                decoder_name
-            )
-            # Set necessary config attributes
-            model.config.decoder_start_token_id = (
-                tokenizer.cls_token_id if tokenizer.cls_token_id 
-                else tokenizer.bos_token_id
-            )
-            model.config.pad_token_id = tokenizer.pad_token_id
-            
-            if "pix2struct-large" not in config["processor_name"]:
-                lora_config = get_lora_config(model)
-                model = prepare_model_for_kbit_training(model)
-                model = get_peft_model(model, lora_config)
-                model.gradient_checkpointing_enable()
-                del decoder
-                return model
-            
-            return model
+    quantization_config = BitsAndBytesConfig(load_in_8_bit=True) 
+    # # Dynamically load components
+    processor = (eval(config["processor_class"]).from_pretrained(config["processor_name"])
+                 if "processor_class" in config 
+                 else AutoProcessor.from_pretrained(config["processor_name"]))
 
-        # Check if model requires original implementation
-        elif isinstance(orig_instance, requires_original_implementation):
-            return MultimodalModel(
-                processor=processor,
-                decoder=decoder,
-                tokenizer=tokenizer
-            )
-        # ohh the irony of the models lol
-        elif isinstance(orig_instance, (GitForCausalLM, VisionEncoderDecoderModel, LlamaForCausalLM)):
-            return decoder
-        # For any other case, default to MultimodalModel
-        else:
-            return MultimodalModel(
-                processor=processor,
-                decoder=decoder,
-                tokenizer=tokenizer
-            )
-            
-    except Exception as e:
-        raise ValueError(
-            f"Failed to initialize model with processor {processor.__class__.__name__} "
-            f"and decoder {decoder.__class__.__name__}: {str(e)}"
+    model = eval(config["decoder_class"]).from_pretrained(
+        config["decoder_name"],
+        quantization_config=quantization_config,
+        torch_dtype=torch.float16
+    )
+
+    tokenizer = (AutoTokenizer.from_pretrained(config["tokenizer_name"])
+                 if "tokenizer_name" in config
+                 else AutoTokenizer.from_pretrained(config["processor_name"]))
+
+    orig_instance = model.base_model.model if isinstance(model, PeftModel) else model
+    # Check if decoder is compatible with VisionEncoderDecoderModel
+    if isinstance(orig_instance, vision_encoder_decoder_compatible):
+        model = VisionEncoderDecoderModel.from_encoder_decoder_pretrained(
+            config["processor_name"],
+            config["decoder_name"] 
         )
+        # Set necessary config attributes
+        model.config.decoder_start_token_id = (
+            tokenizer.cls_token_id if tokenizer.cls_token_id 
+            else tokenizer.bos_token_id
+        )
+        model.config.pad_token_id = tokenizer.pad_token_id
+        
+        return model, processor, tokenizer
+
+    # Check if model requires original implementation
+    elif isinstance(orig_instance, requires_original_implementation):
+        return MultimodalModel(
+            processor=processor,
+            decoder=model,
+            tokenizer=tokenizer
+        ), processor, tokenizer
+    # ohh the irony of the models lol
+    elif isinstance(orig_instance, (GitForCausalLM, VisionEncoderDecoderModel, LlamaForCausalLM)):
+        return model , processor, tokenizer
+    # For any other case, default to MultimodalModel
+    else:
+        return MultimodalModel(
+            processor=processor,
+            decoder=model,
+            tokenizer=tokenizer
+        ), processor, tokenizer
 
 # After creating your model
 def enable_grads(model):
@@ -299,16 +278,9 @@ def enable_grads(model):
 
 # Training Setup
 def train_model(model_config, dataset):
-    # Initialize model wrapper
-    model = select_best_model(
-        processor=model_config["processor"],
-        decoder=model_config["decoder"],
-        tokenizer=model_config["tokenizer"],
-        processor_name=model_config["processor_name"],
-        decoder_name=model_config["decoder_name"]
-    )
+    # Initialize gradients on model
+    model = model_config["decoder"]
     enable_grads(model)
-
     # Training Arguments
     training_args = TrainingArguments(
         output_dir=f"trainer_logs/{model_config['processor_name']}",
@@ -361,49 +333,11 @@ for idx, config in enumerate(model_configs):
     print()
         
     
-    quantization_config = BitsAndBytesConfig(load_in_8_bit=True) 
-    # Dynamically load components
-    processor = (config["processor_class"].from_pretrained(config["processor_name"])
-                 if "processor_class" in config 
-                 else AutoProcessor.from_pretrained(config["processor_name"]))
-
-    model = config["decoder_class"].from_pretrained(
-        config["decoder_name"],
-        quantization_config=quantization_config,
-        torch_dtype=torch.float16
+    model, processor, tokenizer = select_best_model(
+        config
     )
-
-    #ps i dont usually write this ugly code
-    try:
-        tokenizer = (AutoTokenizer.from_pretrained(config["tokenizer_name"])
-                     if "tokenizer_name" in config
-                     else processor.tokenizer)
-    except AttributeError as e:
-        # I have you hugging face developers
-        try:
-            tokenizer = processor._tokenizer
-        except AttributeError as e:
-            tokenizer = AutoTokenizer.from_pretrained(config["processor_name"])
-
-    # if "Qwen" in config["processor_name"]:
-    #     processor = AutoProcessor.from_pretrained(config['processor_name'], max_pixels=256*28*28)
-        
-    #LORA 
-    lora_config = get_lora_config(model)
-    if "Janus-Pro-7B" not in config["decoder_name"]:
-        model = prepare_model_for_kbit_training(model) 
-    else:
-        model = prepare_janus_pro(model)
-
-    model = get_peft_model(model, lora_config) 
-
-    if "Janus-Pro-7B" not in config["decoder_name"]:
-        model.gradient_checkpointing_enable() 
-
-    print("-"*100)
-    print(f"Model: {config['processor_name']}, {config['decoder_name']}")
-    print(model.print_trainable_parameters())
-    print("-"*100)
+    if tokenizer.pad_token is None:
+        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
     # Train and save
     trained_model = train_model({
