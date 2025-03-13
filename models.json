@@ -7,6 +7,13 @@
         "peft": false
     },
     {
+        "processor_name": "Salesforce/blip2-opt-2.7b",
+        "decoder_class": "Blip2ForConditionalGeneration",
+        "decoder_name": "Salesforce/blip2-opt-2.7b",
+        "requires_original": true,
+        "peft": false
+    },
+    {
         "processor_name": "microsoft/git-base",
         "decoder_class": "AutoModelForCausalLM",
         "decoder_name": "microsoft/git-base",
@@ -41,14 +48,10 @@
         "peft": false
     },
     {
-        "processor_name": "deepseek-ai/Janus-Pro-7B",
-        "decoder_class": "AutoModelForCausalLM",
-        "decoder_name": "deepseek-ai/Janus-Pro-7B",
-        "processor_class": "VLChatProcessor",
-        "decoder_kwargs": {
-            "trust_remote_code": true
-        },
+        "processor_name": "Qwen/Qwen2.5-VL-7B-Instruct",
+        "decoder_class": "Qwen2_5_VLForConditionalGeneration",
+        "decoder_name": "Qwen/Qwen2.5-VL-7B-Instruct",
         "peft": false
-    }
+    },
 ]
 
