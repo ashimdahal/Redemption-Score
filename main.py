@@ -1,3 +1,4 @@
+import json
 import random
 import glob
 import albumentations as A
@@ -17,6 +18,7 @@ from transformers import (
     T5ForConditionalGeneration,
     LlamaForCausalLM,
     Qwen2VLForConditionalGeneration,
+    Qwen2_5_VLForConditionalGeneration,
     Trainer,
     TrainingArguments,
     VisionEncoderDecoderModel,
@@ -46,7 +48,7 @@ data_dir = Path("./dataset/")
 dataset = load_dataset("google-research-datasets/conceptual_captions", split="train")
 downloaded_indices = sorted([int(p.stem) for p in data_dir.glob("*.jpg") if p.stem.isdigit()])
 
-downloaded_indices_subset = random.sample(downloaded_indices, 75000) 
+# downloaded_indices_subset = random.sample(downloaded_indices, 75000) 
 
 # Define Augmentations with Albumentations
 transform = A.Compose([
@@ -61,90 +63,14 @@ transform = A.Compose([
 
 dataset = ConceptualCaptionsDataset(
     dataset,
-    downloaded_indices_subset,
+    downloaded_indices,
     cache_dir=data_dir,
     transform=transform
 )
 # Define model pairs (processor name -> decoder config)
 # Model configuration with identifiers and parameters
-model_configs = [
-    # # BLIP
-    # {
-    #     "processor_name": "Salesforce/blip-image-captioning-base",
-    #     "decoder_class": BlipForConditionalGeneration,
-    #     "decoder_name": "Salesforce/blip-image-captioning-base",
-    #     "requires_original": True,
-    #     "batch_size":256
-    # },
-    #
-    # # GIT
-    # {
-    #     "processor_name": "microsoft/git-base",
-    #     "decoder_class": AutoModelForCausalLM,
-    #     "decoder_name": "microsoft/git-base",
-    #     "tokenizer_name": "microsoft/git-base",
-    #     "batch_size":256
-    # },
 
-    # {
-    #     "processor_name": "nlpconnect/vit-gpt2-image-captioning",
-    #     "decoder_class": VisionEncoderDecoderModel,
-    #     "decoder_name": "nlpconnect/vit-gpt2-image-captioning",
-    #     "processor_class": ViTImageProcessor,
-    #     "batch_size":256
-    # },
-    #
-    # {
-    #     "processor_name": "google/vit-base-patch16-224-in21k",
-    #     "decoder_class": BertModel,
-    #     "decoder_name": "google-bert/bert-base-uncased",
-    #     "tokenizer_name":"google-bert/bert-base-uncased",
-    #     "batch_size":256
-    # },
-    #
-    #
-    # # Swin-bert
-    # {
-    #     "processor_name": "microsoft/swin-base-patch4-window12-384",
-    #     "decoder_class": BertModel,
-    #     "decoder_name": "google-bert/bert-base-uncased",
-    #     "tokenizer_name": "google-bert/bert-base-uncased",
-    #     "batch_size":256
-    # },
-    #
-    # # Pix2Struct
-    # {
-    #     "processor_name": "google/pix2struct-large",
-    #     "decoder_class": Pix2StructForConditionalGeneration,
-    #     "decoder_name": "google/pix2struct-large"
-    # },
-
-    # #LLAMA 
-    # {
-    #     "processor_name": "meta-llama/Llama-3.2-11B-Vision",
-    #     "decoder_class": MllamaForConditionalGeneration,
-    #     "decoder_name": "meta-llama/Llama-3.2-11B-Vision",
-    #     "batch_size":128
-    # },
-    #
-    # # Qwen-VL
-    # {
-    #     "processor_name": "Ertugrul/Qwen2-VL-7B-Captioner-Relaxed",
-    #     "decoder_class": Qwen2VLForConditionalGeneration,
-    #     "decoder_name": "Qwen/Qwen2-VL-7B-Instruct",
-    #     "batch_size":128
-    # },
-    #
-    # # DeepSeek Janus
-    {
-        "processor_name": "deepseek-ai/Janus-Pro-7B",
-        "decoder_class": AutoModelForCausalLM,
-        "decoder_name": "deepseek-ai/Janus-Pro-7B",
-        "processor_class": VLChatProcessor,
-        "decoder_kwargs": {"trust_remote_code": True},
-        "batch_size":128
-    }
-]
+model_configs = json.load(open("models.json"))
 
 def get_lora_config(model):
     """
@@ -323,45 +249,49 @@ def train_model(model_config, dataset):
     
     return model
 
+def main():
 # Main Training Loop
-for idx, config in enumerate(model_configs):
-    print()
-    print("*"*100)
-    print(f"Training model {idx+1}/{len(model_configs)}")
-    print(f"training model pair: {config['processor_name']}, {config['decoder_name']}")
-    print("*"*100)
-    print()
+    for idx, config in enumerate(model_configs):
+        print()
+        print("*"*100)
+        print(f"Training model {idx+1}/{len(model_configs)}")
+        print(f"training model pair: {config['processor_name']}, {config['decoder_name']}")
+        print("*"*100)
+        print()
+            
         
-    
-    model, processor, tokenizer = select_best_model(
-        config
-    )
-    if tokenizer.pad_token is None:
-        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        model, processor, tokenizer = select_best_model(
+            config
+        )
+        if tokenizer.pad_token is None:
+            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
-    # Train and save
-    trained_model = train_model({
-        "processor":processor,
-        "decoder":model,
-        "tokenizer": tokenizer,
-        "requires_original": config.get("requires_original", False),
-        "processor_name":config["processor_name"],
-        "decoder_name":config["decoder_name"],
-        "batch_size": config["batch_size"]
-    }, dataset)
-    
-    output_dir = (
-        f"./results/{config['processor_name'].replace('/','-')}_"
-        f"{config['decoder_name'].replace('/','-')}"
-    )
-    # Save artifacts
-    try:
-        trained_model.decoder.save_pretrained(output_dir)
-    except AttributeError as e:
-        trained_model.save_pretrained(output_dir)
+        # Train and save
+        trained_model = train_model({
+            "processor":processor,
+            "decoder":model,
+            "tokenizer": tokenizer,
+            "requires_original": config.get("requires_original", False),
+            "processor_name":config["processor_name"],
+            "decoder_name":config["decoder_name"],
+            "batch_size": config["batch_size"]
+        }, dataset)
+        
+        output_dir = (
+            f"./results/{config['processor_name'].replace('/','-')}_"
+            f"{config['decoder_name'].replace('/','-')}"
+        )
+        # Save artifacts
+        try:
+            trained_model.decoder.save_pretrained(output_dir)
+        except AttributeError as e:
+            trained_model.save_pretrained(output_dir)
 
-    tokenizer.save_pretrained(output_dir)
-    
-    # Cleanup memory
-    del processor, model, tokenizer, trained_model
-    torch.cuda.empty_cache()
+        tokenizer.save_pretrained(output_dir)
+        
+        # Cleanup memory
+        del processor, model, tokenizer, trained_model
+        torch.cuda.empty_cache()
+
+if __name__ == "__main__":
+    main()
