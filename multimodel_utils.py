@@ -7,9 +7,11 @@ from transformers import (
     Pix2StructForConditionalGeneration,
     Qwen2VLForConditionalGeneration,
     Qwen2VLProcessor,
+    Qwen2_5_VLProcessor,
     MllamaProcessor,
     MllamaForConditionalGeneration,
-    BlipProcessor
+    BlipProcessor,
+    Qwen2_5_VLForConditionalGeneration
 )
 from peft import PeftModel
 from PIL import Image
@@ -55,7 +57,6 @@ class MultimodalCollator(DataCollatorWithPadding):
             padding="max_length", 
             truncation=True, 
             return_tensors="pt",
-            # max_length=512
         )
 
         # Process images
@@ -68,52 +69,40 @@ class MultimodalCollator(DataCollatorWithPadding):
                 "label_names":text_inputs["input_ids"],
             }
 
-        elif isinstance(self.processor, Pix2StructProcessor):
-            headers = ["Describe the contents of this image"] * len(images)
-            processed_outputs = self.processor(images=images, text=headers, return_tensors="pt")
-
-            return {
-                "flattened_patches":processed_outputs["flattened_patches"],
-                "attention_mask":processed_outputs["attention_mask"],
-                # "decoder_input_ids":text_inputs["input_ids"]
-                "labels": text_inputs["input_ids"]  # For causal LM models
-            } 
-        elif isinstance(self.processor, (Qwen2VLProcessor)):
+        elif isinstance(self.processor, (
+                Qwen2VLProcessor,
+                Qwen2_5_VLProcessor,
+                MllamaProcessor
+            )):
             features = [format_data(feature) for feature in features]
-            texts = [self.processor.apply_chat_template(example, tokenize=False, add_generation_prompt=True) for example in features]
+            texts = [
+                self.processor.apply_chat_template(
+                    example,
+                    tokenize=False,
+                    add_generation_prompt=True
+                ) for example in features
+            ]
 
-            image_inputs = [process_vision_info(example)[0] for example in features]
             processed_outputs = self.processor(
                 text=texts,
-                images=image_inputs,
+                images=images,
                 return_tensors="pt",
                 padding=True
             )
-            # labels = processed_outputs["input_ids"].clone()
-            # labels[labels == self.tokenizer.pad_token_id] = -100
-            # image_tokens = [151652, 151653, 151655]
-            # for image_token_id in image_tokens:
-            #     labels[labels == image_token_id] = -100
-            #
-            processed_outputs["labels"] = text_inputs["input_ids"]
+            labels = processed_outputs["input_ids"].clone()
+            labels[labels == self.tokenizer.pad_token_id] = -100
+            if isinstance(processor, Qwen2VLProcessor):  # Check if the processor is Qwen2VLProcessor
+                image_tokens = [151652, 151653, 151655]  # Specific image token IDs for Qwen2VLProcessor
+            else:
+                image_tokens = [processor.tokenizer.convert_tokens_to_ids(processor.image_token)]  
+
+            labels = processed_outputs["input_ids"].clone()
+            for image_token_id in image_tokens:
+                labels[labels == image_token_id] = -100
+
+            processed_outputs["labels"] = labels
             return processed_outputs
 
-        elif isinstance(self.processor, MllamaProcessor):
-            #needs explicitly set same token size on input and output
-            features = [format_data(feature) for feature in features]
-            conversations = [self.processor.apply_chat_template(example, tokenize=False, add_generation_prompt=True) for example in features]
-            # conversations = "<|image|> Caption this image."
-            processed_outputs = self.processor(text=conversations, images=images, return_tensors="pt")
-            # processed_outputs = self.processor(
-            #     images=images,
-            #     text=[self.text_prompt] * len(images),
-            #     return_tensors="pt",
-            #     max_length=512,
-            #     truncation=True,
-            #     padding="max_length"
-            # )
-            processed_outputs["labels"] = text_inputs["input_ids"]
-            return processed_outputs
         elif isinstance(self.processor, VLChatProcessor):
             conversations = [
                 {
@@ -131,11 +120,12 @@ class MultimodalCollator(DataCollatorWithPadding):
                 truncation=True,
                 force_batchify=True
             )
-            labels = text_inputs["input_ids"]
-            # labels[labels == self.tokenizer.pad_token_id] = -100
-            # image_tokens = [self.processor.tokenizer.convert_tokens_to_ids(self.processor.image_token)]
-            # for image_token_id in image_tokens:
-            #     labels[labels == image_token_id] = -100
+        
+            labels = processed_outputs["input_ids"].clone()
+            labels[labels == self.tokenizer.pad_token_id] = -100
+            image_tokens = [self.processor.tokenizer.convert_tokens_to_ids(self.processor.image_token)]
+            for image_token_id in image_tokens:
+                labels[labels == image_token_id] = -100
 
             processed_outputs["labels"] = labels
             return {
@@ -205,6 +195,7 @@ class MultimodalModel(torch.nn.Module):
             Pix2StructForConditionalGeneration,
             Qwen2VLForConditionalGeneration,
             MllamaForConditionalGeneration,
+            Qwen2_5_VLForConditionalGeneration
         )):
             # Encoder-decoder models
             outputs = self.decoder(
