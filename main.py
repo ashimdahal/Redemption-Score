@@ -13,6 +13,7 @@ from transformers import (
     AutoModelForCausalLM,
     AutoModelForSeq2SeqLM,
     BlipForConditionalGeneration,
+    Blip2ForConditionalGeneration,
     BartForConditionalGeneration,
     GPT2LMHeadModel,
     T5ForConditionalGeneration,
@@ -71,6 +72,21 @@ dataset = ConceptualCaptionsDataset(
 # Model configuration with identifiers and parameters
 
 model_configs = json.load(open("models.json"))
+
+vision_encoder_decoder_compatible = (
+    BertLMHeadModel,
+    GPT2LMHeadModel,
+    BertModel
+)
+# List of models that require their original implementation
+requires_original_implementation = (
+    BlipForConditionalGeneration,
+    Pix2StructForConditionalGeneration,
+    Qwen2VLForConditionalGeneration,
+    LlamaForCausalLM,  
+    MllamaForConditionalGeneration
+)
+
 
 def get_lora_config(model):
     """
@@ -140,7 +156,7 @@ def prepare_janus_pro(model):
     return model
 
 
-def select_best_model_inference(
+def select_best_model_and_apply_qlora(
     config
 ):
     # List of model types that work with VisionEncoderDecoderModel
@@ -156,6 +172,10 @@ def select_best_model_inference(
         quantization_config=quantization_config,
         torch_dtype=torch.float16
     )
+
+    # Quantization of model in QLoRA
+    peft_config = get_lora_config(model)
+    model = get_peft_model(model, peft_config)
 
     tokenizer = (AutoTokenizer.from_pretrained(config["tokenizer_name"])
                  if "tokenizer_name" in config
@@ -175,6 +195,8 @@ def select_best_model_inference(
         )
         model.config.pad_token_id = tokenizer.pad_token_id
         
+        peft_config = get_lora_config(model)
+        model = get_peft_model(model, peft_config)
         return model, processor, tokenizer
 
     # Check if model requires original implementation
@@ -210,13 +232,13 @@ def train_model(model_config, dataset):
     # Training Arguments
     training_args = TrainingArguments(
         output_dir=f"trainer_logs/{model_config['processor_name']}",
-        per_device_train_batch_size=model_config["batch_size"],
+        per_device_train_batch_size=512,
         auto_find_batch_size=True,
         num_train_epochs=1,
         learning_rate=5e-5,
         logging_dir=f'./logs_tf_board/{model_config["processor_name"]}',
         # save_strategy="epoch",
-        save_steps=1500,
+        save_steps=5000,
         resume_from_checkpoint=True,
         remove_unused_columns=False,
         # fp16=True,
@@ -243,9 +265,13 @@ def train_model(model_config, dataset):
             tokenizer=model_config["tokenizer"],
         ),
     )
+    resume_from_checkpoint = (
+        True if glob.glob(f"trainer_logs/{model_config['processor_name']}/checkpoint-*") 
+        else False
+    )
     
     # Start training
-    trainer.train()
+    trainer.train(resume_from_checkpoint=resume_from_checkpoint)
     
     return model
 
@@ -260,7 +286,7 @@ def main():
         print()
             
         
-        model, processor, tokenizer = select_best_model(
+        model, processor, tokenizer = select_best_model_and_apply_qlora(
             config
         )
         if tokenizer.pad_token is None:
@@ -274,7 +300,6 @@ def main():
             "requires_original": config.get("requires_original", False),
             "processor_name":config["processor_name"],
             "decoder_name":config["decoder_name"],
-            "batch_size": config["batch_size"]
         }, dataset)
         
         output_dir = (
