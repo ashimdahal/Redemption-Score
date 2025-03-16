@@ -1,16 +1,17 @@
 from transformers import (
+    BlipProcessor,
     BlipForConditionalGeneration,
     BartForConditionalGeneration,
     ViTImageProcessor,
-    LlamaForCausalLM,
     Pix2StructProcessor,
     Pix2StructForConditionalGeneration,
     Qwen2VLForConditionalGeneration,
-    Qwen2VLProcessor,
     Qwen2_5_VLProcessor,
     MllamaProcessor,
     MllamaForConditionalGeneration,
-    BlipProcessor,
+    Blip2Processor,
+    Blip2ForConditionalGeneration,
+    Qwen2VLProcessor,
     Qwen2_5_VLForConditionalGeneration
 )
 from peft import PeftModel
@@ -50,8 +51,26 @@ class MultimodalCollator(DataCollatorWithPadding):
             self.text_prompt = "<|image|> Give caption to this image like a normal human being. "
 
     def __call__(self, features):
+
         # Process text
         text = [item["text"] for item in features]
+        #process Images
+        images = [item["image"] for item in features]
+
+        if isinstance(self.processor, Blip2Processor):
+            processed_inputs = self.processor(
+                images=images,
+                text=text,
+                return_tensors="pt",
+                max_length=1024, # since its for both text and images it needs to be more
+                padding="max_length"
+            )
+            labels = processed_inputs["input_ids"].clone()
+            # Mask padding tokens.
+            processed_inputs["labels"] = labels
+
+            return processed_inputs
+
         text_inputs = self.tokenizer(
             text, 
             padding="max_length", 
@@ -59,9 +78,14 @@ class MultimodalCollator(DataCollatorWithPadding):
             return_tensors="pt",
         )
 
-        # Process images
-        images = [item["image"] for item in features]
         if isinstance(self.processor, ViTImageProcessor):
+            text_inputs = self.tokenizer(
+                text, 
+                padding="max_length", 
+                truncation=True, 
+                return_tensors="pt",
+                max_length=128 #since text tokens for captions arent large
+            )
             pixel_values = self.processor(images=images, return_tensors="pt").pixel_values
             return{
                 "pixel_values": pixel_values,
@@ -83,25 +107,25 @@ class MultimodalCollator(DataCollatorWithPadding):
                 ) for example in features
             ]
 
-            processed_outputs = self.processor(
+            processed_inputs = self.processor(
                 text=texts,
                 images=images,
                 return_tensors="pt",
                 padding=True
             )
-            labels = processed_outputs["input_ids"].clone()
+            labels = processed_inputs["input_ids"].clone()
             labels[labels == self.tokenizer.pad_token_id] = -100
             if isinstance(processor, Qwen2VLProcessor):  # Check if the processor is Qwen2VLProcessor
                 image_tokens = [151652, 151653, 151655]  # Specific image token IDs for Qwen2VLProcessor
             else:
                 image_tokens = [processor.tokenizer.convert_tokens_to_ids(processor.image_token)]  
 
-            labels = processed_outputs["input_ids"].clone()
+            labels = processed_inputs["input_ids"].clone()
             for image_token_id in image_tokens:
                 labels[labels == image_token_id] = -100
 
-            processed_outputs["labels"] = labels
-            return processed_outputs
+            processed_inputs["labels"] = labels
+            return processed_inputs
 
         elif isinstance(self.processor, VLChatProcessor):
             conversations = [
@@ -112,7 +136,7 @@ class MultimodalCollator(DataCollatorWithPadding):
                 }
                 for image in features
             ]
-            processed_outputs = self.processor(
+            processed_inputs = self.processor(
                 conversations=conversations,
                 images=images, 
                 paddint=True,
@@ -121,48 +145,48 @@ class MultimodalCollator(DataCollatorWithPadding):
                 force_batchify=True
             )
         
-            labels = processed_outputs["input_ids"].clone()
+            labels = processed_inputs["input_ids"].clone()
             labels[labels == self.tokenizer.pad_token_id] = -100
             image_tokens = [self.processor.tokenizer.convert_tokens_to_ids(self.processor.image_token)]
             for image_token_id in image_tokens:
                 labels[labels == image_token_id] = -100
 
-            processed_outputs["labels"] = labels
+            processed_inputs["labels"] = labels
             return {
-                "pixel_values":processed_outputs["pixel_values"],
+                "pixel_values":processed_inputs["pixel_values"],
                 "labels":labels,
-                # "attention_mask":processed_outputs["attention_mask"],
-                "images_emb_mask":processed_outputs["images_emb_mask"],
-                "images_seq_mask":processed_outputs["images_seq_mask"],
-                "input_ids":processed_outputs["input_ids"],
-                # "sft_format":processed_outputs["sft_format"]
+                # "attention_mask":processed_inputs["attention_mask"],
+                "images_emb_mask":processed_inputs["images_emb_mask"],
+                "images_seq_mask":processed_inputs["images_seq_mask"],
+                "input_ids":processed_inputs["input_ids"],
+                # "sft_format":processed_inputs["sft_format"]
             }
         elif (isinstance(self.processor, BlipProcessor)):
-            processed_outputs = self.processor(
+            processed_inputs = self.processor(
                 images=images,
                 text=text,
                 return_tensors="pt",
                 padding="max_length"
             )
-            labels = processed_outputs["input_ids"].clone()
+            labels = processed_inputs["input_ids"].clone()
             # Mask padding tokens.
-            processed_outputs["labels"] = labels
+            processed_inputs["labels"] = labels
 
-            return processed_outputs
+            return processed_inputs
         else:
-            processed_outputs = self.processor(
+            processed_inputs = self.processor(
                 images=images,
                 text=text,
                 return_tensors="pt",
                 padding="max_length"
             )
 
-        labels = processed_outputs["input_ids"].clone() # Mask padding tokens.
+        labels = processed_inputs["input_ids"].clone() # Mask padding tokens.
         labels[labels == self.processor.tokenizer.pad_token_id] = -100
         
         return {
-            "pixel_values": processed_outputs["pixel_values"],
-            "input_ids": processed_outputs["input_ids"],
+            "pixel_values": processed_inputs["pixel_values"],
+            "input_ids": processed_inputs["input_ids"],
             "attention_mask": text_inputs["attention_mask"],
             "labels": labels,
             "label_names":labels
@@ -190,11 +214,11 @@ class MultimodalModel(torch.nn.Module):
         # Handle different model architectures
         if isinstance(self.orig_instance, (
             BlipForConditionalGeneration,
-            LlamaForCausalLM,
             BartForConditionalGeneration,
             Pix2StructForConditionalGeneration,
             Qwen2VLForConditionalGeneration,
             MllamaForConditionalGeneration,
+            Blip2ForConditionalGeneration,
             Qwen2_5_VLForConditionalGeneration
         )):
             # Encoder-decoder models
