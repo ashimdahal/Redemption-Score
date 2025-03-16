@@ -52,6 +52,6 @@
         "decoder_class": "Qwen2_5_VLForConditionalGeneration",
         "decoder_name": "Qwen/Qwen2.5-VL-7B-Instruct",
         "peft": false
-    },
+    }
 ]
 
