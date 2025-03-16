@@ -43,19 +43,6 @@ class ConceptualCaptionsDataset(Dataset):
         # If image exists, load from disk
         return PIL.Image.open(image_path).convert("RGB") if os.path.exists(image_path) else None
 
-        # raise ValueError(f"{image_path} does not exist please set prevalidation=True"
-        #                      "to delete corrupt images")
-        #
-        # # Otherwise, download and save it
-        # try:
-        #     request = urllib.request.Request(image_url, headers={"user-agent": "datasets"})
-        #     with urllib.request.urlopen(request, timeout=5) as req:
-        #         image = PIL.Image.open(io.BytesIO(req.read())).convert("RGB")
-        #         image.save(image_path, "JPEG")  # Save to cache
-        #     return image
-        # except Exception:
-        #     return None  # Return None for failed downloads
-
     def get_image_path(self, idx):
         image_id = self.original_indices[idx]
         return os.path.join(self.cache_dir, f"{image_id}.jpg")
@@ -67,11 +54,12 @@ class ConceptualCaptionsDataset(Dataset):
             try:
                 with Image.open(image_path) as image:
                     image.getdata()[0]
+                    image = np.array(image)
                     if image.shape[0] ==1:
-                        print(f"image wrong {image_id}")
+                        print(f"image wrong {original_idx}")
                         os.remove(image_path)
                     elif image.shape == (1,1,3):
-                        print(f"image wrong {image_id}")
+                        print(f"image wrong {original_idx}")
                         os.remove(image_path)
                     
                 # self.original_indices.remove(idx)
