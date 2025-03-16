@@ -22,9 +22,7 @@ dataset = ConceptualCaptionsDataset(
     downloaded_indices,
     cache_dir=data_dir,
     transform=transform,
-    first_run=False
+    first_run=True
 )
-for x in dataset:
-    pass
 
 print("finished cleaning dataset")
