@@ -28,14 +28,6 @@
         "peft": false
     },
     {
-        "processor_name": "NourFakih/image-captioning-Vit-GPT2-Flickr8k",
-        "decoder_class": "VisionEncoderDecoderModel",
-        "decoder_name": "NourFakih/image-captioning-Vit-GPT2-Flickr8k",
-        "processor_class": "ViTImageProcessor",
-        "tokenizer_name": "gpt2",
-        "peft": false
-    },
-    {
         "processor_name": "meta-llama/Llama-3.2-11B-Vision-Instruct",
         "decoder_class": "MllamaForConditionalGeneration",
         "decoder_name": "meta-llama/Llama-3.2-11B-Vision-Instruct",
