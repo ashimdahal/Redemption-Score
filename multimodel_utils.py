@@ -115,7 +115,7 @@ class MultimodalCollator(DataCollatorWithPadding):
             )
             labels = processed_inputs["input_ids"].clone()
             labels[labels == self.tokenizer.pad_token_id] = -100
-            if isinstance(processor, Qwen2VLProcessor):  # Check if the processor is Qwen2VLProcessor
+            if isinstance(self.processor, Qwen2VLProcessor):  # Check if the processor is Qwen2VLProcessor
                 image_tokens = [151652, 151653, 151655]  # Specific image token IDs for Qwen2VLProcessor
             else:
                 image_tokens = [processor.tokenizer.convert_tokens_to_ids(processor.image_token)]  
