@@ -61,14 +61,16 @@ def adjust_model_name(model_name):
         return "LLAMA"
     elif "deepseek" in name_lower:
         return "Janus Pro"
-    elif "qwen" in name_lower:
+    elif "ertugrul" in name_lower:
         return "Qwen 2VL"
+    elif "qwen2.5" in name_lower:
+        return "Qwen 2.5 VL"
     elif "microsoft" in name_lower:
         return "GIT"
     elif "nlpconnect" in name_lower:
         return "ViT with GPT2"
-    elif "nourfakih" in name_lower:
-        return "ViT with GPT2"
+    elif "blip2" in name_lower:
+        return "BLIP"
     elif "salesforce" in name_lower:
         return "BLIP"
     else:
