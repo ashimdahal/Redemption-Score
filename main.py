@@ -120,10 +120,13 @@ def get_lora_config(model):
         # Decoder-only architectures
         target_modules = ["q_proj", "v_proj"]
         task_type = "CAUSAL_LM"
-    elif "janus" in model_name or "qwen" in model_name:
+    elif "janus" in model_name:
         # Decoder-only architectures.
         target_modules =  ['k_proj', 'q_proj', 'v_proj', 'o_proj', "gate_proj", "down_proj", "up_proj"]
         task_type = "CAUSAL_LM"
+    elif "qwen" in model_name:
+        target_modules=["q_proj", "v_proj"]
+        task_type="CAUSAL_LM"
     else:
         # Fallback using a regex pattern for linear layers.
         target_modules = r".*_proj$|.*query$|.*value$|.*dense"
@@ -161,22 +164,33 @@ def select_best_model_and_apply_qlora(
 ):
     # List of model types that work with VisionEncoderDecoderModel
     
-    quantization_config = BitsAndBytesConfig(load_in_8_bit=True) 
+    quantization_config = BitsAndBytesConfig(
+        load_in_4_bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16
+    ) 
     # # Dynamically load components
     processor = (eval(config["processor_class"]).from_pretrained(config["processor_name"])
                  if "processor_class" in config 
                  else AutoProcessor.from_pretrained(config["processor_name"]))
 
+    # if "Qwen" in config["processor_name"]:
+    #     processor = AutoProcessor.from_pretrained(config['processor_name'], max_pixels=256*28*28)
+
     model = eval(config["decoder_class"]).from_pretrained(
         config["decoder_name"],
         quantization_config=quantization_config,
-        torch_dtype=torch.float16
+        torch_dtype=torch.bfloat16
     )
 
     # Quantization of model in QLoRA
     peft_config = get_lora_config(model)
     model = get_peft_model(model, peft_config)
+    if "qwen" in config['processor_name']:
+        model = prepare_model_for_kbit_training(model)
 
+    model.gradient_checkpointing_enable()
     tokenizer = (AutoTokenizer.from_pretrained(config["tokenizer_name"])
                  if "tokenizer_name" in config
                  else AutoTokenizer.from_pretrained(config["processor_name"]))
@@ -217,7 +231,6 @@ def select_best_model_and_apply_qlora(
             tokenizer=tokenizer
         ), processor, tokenizer
 
-# After creating your model
 def enable_grads(model):
     for param in model.parameters():
         if param.requires_grad:
@@ -232,7 +245,7 @@ def train_model(model_config, dataset):
     # Training Arguments
     training_args = TrainingArguments(
         output_dir=f"trainer_logs/{model_config['processor_name']}",
-        per_device_train_batch_size=512,
+        per_device_train_batch_size=64,
         auto_find_batch_size=True,
         num_train_epochs=1,
         learning_rate=5e-5,
@@ -249,7 +262,7 @@ def train_model(model_config, dataset):
         save_safetensors=False,
         optim="adafactor",
         gradient_checkpointing_kwargs={"use_reentrant":False},
-        gradient_accumulation_steps=1,
+        gradient_accumulation_steps=4,
         max_grad_norm=3.0,
         label_names=["labels"],
     )

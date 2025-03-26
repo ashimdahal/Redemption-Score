@@ -106,6 +106,12 @@ class MultimodalCollator(DataCollatorWithPadding):
                     add_generation_prompt=True
                 ) for example in features
             ]
+            if isinstance(self.processor, (
+                Qwen2_5_VLForConditionalGeneration,
+                Qwen2VLForConditionalGeneration
+            )
+                          ):
+                images = [process_vision_info(example)[0] for example in features]
 
             processed_inputs = self.processor(
                 text=texts,
@@ -200,15 +206,8 @@ class MultimodalModel(torch.nn.Module):
         self.decoder = decoder
         self.tokenizer = tokenizer
         
-        self.has_vision_encoder = hasattr(self.decoder, "vision_model") or hasattr(self.decoder, "encoder")
-
         self.orig_instance = self.decoder.base_model.model if isinstance(decoder, PeftModel) else self.decoder
-        # Freeze vision encoder if required
-        if freeze_vision_encoder and self.has_vision_encoder:
-            vision_encoder = getattr(self.decoder, "vision_model", None) or getattr(self.decoder, "encoder", None)
-            if vision_encoder:
-                for param in vision_encoder.parameters():
-                    param.requires_grad = False
+        self.orig_instance.train()
 
     def forward(self, **kwargs):
         # Handle different model architectures
