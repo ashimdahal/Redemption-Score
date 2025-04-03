@@ -175,9 +175,9 @@ def select_best_model_and_apply_qlora(
                  if "processor_class" in config 
                  else AutoProcessor.from_pretrained(config["processor_name"]))
 
-    # if "Qwen" in config["processor_name"]:
-    #     print(f"Qwen detection successful")
-    #     processor = AutoProcessor.from_pretrained(config['processor_name'], max_pixels=256*28*28)
+    if "Qwen" in config["processor_name"]:
+        print(f"Qwen detection successful")
+        processor = AutoProcessor.from_pretrained(config['processor_name'], max_pixels=512*28*28)
 
     model = eval(config["decoder_class"]).from_pretrained(
         config["decoder_name"],
