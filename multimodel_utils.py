@@ -106,12 +106,12 @@ class MultimodalCollator(DataCollatorWithPadding):
                     add_generation_prompt=True
                 ) for example in features
             ]
-            if isinstance(self.processor, (
-                Qwen2_5_VLForConditionalGeneration,
-                Qwen2VLForConditionalGeneration
-            )
-                          ):
-                images = [process_vision_info(example)[0] for example in features]
+            # if isinstance(self.processor, (
+            #     Qwen2_5_VLForConditionalGeneration,
+            #     Qwen2VLForConditionalGeneration
+            # )
+            #               ):
+            #     images = [process_vision_info(example)[0] for example in features]
 
             processed_inputs = self.processor(
                 text=texts,
@@ -207,7 +207,12 @@ class MultimodalModel(torch.nn.Module):
         self.tokenizer = tokenizer
         
         self.orig_instance = self.decoder.base_model.model if isinstance(decoder, PeftModel) else self.decoder
-        self.orig_instance.train()
+
+    def gradient_checkpointing_enable(self, *args, **kwargs):
+        # Delegate to decoder's method if it exists
+        if hasattr(self.orig_instance, 'gradient_checkpointing_enable'):
+            return self.orig_instance.gradient_checkpointing_enable(*args, **kwargs)
+        raise ValueError(f"model {self.orig_instance} doesnt have attribute gradient_checkpointing_enable")
 
     def forward(self, **kwargs):
         # Handle different model architectures
