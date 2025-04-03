@@ -176,6 +176,7 @@ def select_best_model_and_apply_qlora(
                  else AutoProcessor.from_pretrained(config["processor_name"]))
 
     # if "Qwen" in config["processor_name"]:
+    #     print(f"Qwen detection successful")
     #     processor = AutoProcessor.from_pretrained(config['processor_name'], max_pixels=256*28*28)
 
     model = eval(config["decoder_class"]).from_pretrained(
@@ -187,7 +188,9 @@ def select_best_model_and_apply_qlora(
     # Quantization of model in QLoRA
     peft_config = get_lora_config(model)
     model = get_peft_model(model, peft_config)
-    if "qwen" in config['processor_name']:
+    print(config['processor_name'])
+    if "Qwen" in config['processor_name']:
+        print(f"Qwen detection successful")
         model = prepare_model_for_kbit_training(model)
 
     model.gradient_checkpointing_enable()
@@ -245,7 +248,7 @@ def train_model(model_config, dataset):
     # Training Arguments
     training_args = TrainingArguments(
         output_dir=f"trainer_logs/{model_config['processor_name']}",
-        per_device_train_batch_size=64,
+        per_device_train_batch_size=32,
         auto_find_batch_size=True,
         num_train_epochs=1,
         learning_rate=5e-5,
@@ -262,7 +265,7 @@ def train_model(model_config, dataset):
         save_safetensors=False,
         optim="adafactor",
         gradient_checkpointing_kwargs={"use_reentrant":False},
-        gradient_accumulation_steps=4,
+        gradient_accumulation_steps=2,
         max_grad_norm=3.0,
         label_names=["labels"],
     )
