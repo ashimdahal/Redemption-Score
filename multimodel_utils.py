@@ -106,12 +106,12 @@ class MultimodalCollator(DataCollatorWithPadding):
                     add_generation_prompt=True
                 ) for example in features
             ]
-            # if isinstance(self.processor, (
-            #     Qwen2_5_VLForConditionalGeneration,
-            #     Qwen2VLForConditionalGeneration
-            # )
-            #               ):
-            #     images = [process_vision_info(example)[0] for example in features]
+            if isinstance(self.processor, (
+                Qwen2_5_VLForConditionalGeneration,
+                Qwen2VLForConditionalGeneration
+            )
+                          ):
+                images = [process_vision_info(example)[0] for example in features]
 
             processed_inputs = self.processor(
                 text=texts,
@@ -121,16 +121,17 @@ class MultimodalCollator(DataCollatorWithPadding):
             )
             labels = processed_inputs["input_ids"].clone()
             labels[labels == self.tokenizer.pad_token_id] = -100
+
             if isinstance(self.processor, Qwen2VLProcessor):  # Check if the processor is Qwen2VLProcessor
                 image_tokens = [151652, 151653, 151655]  # Specific image token IDs for Qwen2VLProcessor
             else:
                 image_tokens = [self.processor.tokenizer.convert_tokens_to_ids(self.processor.image_token)]  
 
-            labels = processed_inputs["input_ids"].clone()
             for image_token_id in image_tokens:
                 labels[labels == image_token_id] = -100
 
             processed_inputs["labels"] = labels
+
             return processed_inputs
 
         elif isinstance(self.processor, VLChatProcessor):
