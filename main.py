@@ -125,9 +125,11 @@ def get_lora_config(model):
         target_modules =  ['k_proj', 'q_proj', 'v_proj', 'o_proj', "gate_proj", "down_proj", "up_proj"]
         task_type = "CAUSAL_LM"
     elif "qwen" in model_name:
+        print("qwen detected on lora config")
         target_modules=["q_proj", "v_proj"]
         task_type="CAUSAL_LM"
     else:
+        print("using fallback projection layers")
         # Fallback using a regex pattern for linear layers.
         target_modules = r".*_proj$|.*query$|.*value$|.*dense"
         task_type = "CAUSAL_LM"
