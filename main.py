@@ -184,16 +184,18 @@ def select_best_model_and_apply_qlora(
     model = eval(config["decoder_class"]).from_pretrained(
         config["decoder_name"],
         quantization_config=quantization_config,
-        torch_dtype=torch.bfloat16
+        torch_dtype=torch.bfloat16,
+        trust_remote_code=True
     )
 
-    # Quantization of model in QLoRA
-    peft_config = get_lora_config(model)
-    model = get_peft_model(model, peft_config)
     print(config['processor_name'])
     if "Qwen" in config['processor_name']:
         print(f"Qwen detection successful")
         model = prepare_model_for_kbit_training(model)
+
+    # Quantization of model in QLoRA
+    peft_config = get_lora_config(model)
+    model = get_peft_model(model, peft_config)
 
     model.gradient_checkpointing_enable()
     tokenizer = (AutoTokenizer.from_pretrained(config["tokenizer_name"])
