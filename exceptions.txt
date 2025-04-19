@@ -1,0 +1,23 @@
+OpenCV(4.11.0) /io/opencv/modules/imgproc/src/resize.cpp:4211: error: (-215:Assertion failed) inv_scale_x > 0 in function 'resize'
+ on file 318256 with 220911
+OpenCV(4.11.0) /io/opencv/modules/imgproc/src/resize.cpp:4211: error: (-215:Assertion failed) inv_scale_x > 0 in function 'resize'
+ on file 355698 with 246932
+OpenCV(4.11.0) /io/opencv/modules/imgproc/src/resize.cpp:4211: error: (-215:Assertion failed) inv_scale_x > 0 in function 'resize'
+ on file 368120 with 255504
+OpenCV(4.11.0) /io/opencv/modules/imgproc/src/resize.cpp:4211: error: (-215:Assertion failed) inv_scale_x > 0 in function 'resize'
+ on file 318028 with 220767
+low >= high on file 110616 with 76789
+OpenCV(4.11.0) /io/opencv/modules/imgproc/src/resize.cpp:4211: error: (-215:Assertion failed) inv_scale_x > 0 in function 'resize'
+ on file 291829 with 202616
+low >= high on file 289579 with 201054
+OpenCV(4.11.0) /io/opencv/modules/imgproc/src/resize.cpp:4211: error: (-215:Assertion failed) inv_scale_x > 0 in function 'resize'
+ on file 319628 with 221871
+low >= high on file 390816 with 271220
+OpenCV(4.11.0) /io/opencv/modules/imgproc/src/resize.cpp:4211: error: (-215:Assertion failed) inv_scale_x > 0 in function 'resize'
+ on file 344112 with 238935
+OpenCV(4.11.0) /io/opencv/modules/imgproc/src/resize.cpp:4211: error: (-215:Assertion failed) inv_scale_x > 0 in function 'resize'
+ on file 294096 with 204182
+low >= high on file 345177 with 239676
+OpenCV(4.11.0) /io/opencv/modules/imgproc/src/resize.cpp:4211: error: (-215:Assertion failed) inv_scale_x > 0 in function 'resize'
+ on file 106597 with 73974
+low >= high on file 211969 with 146617
