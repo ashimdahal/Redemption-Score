@@ -1,65 +1,51 @@
 # Introduction to future work
 A deep comparison of 8 VLMs (some are not VLMs by nature but could be made into one) fine tuned for image dataset. VLMs tested include the following:
 ```python
-    # BLIP
     {
         "processor_name": "Salesforce/blip-image-captioning-base",
-        "decoder_class": BlipForConditionalGeneration,
+        "decoder_class": "BlipForConditionalGeneration",
         "decoder_name": "Salesforce/blip-image-captioning-base",
-        "requires_original": True
+        "requires_original": true,
+        "peft": false
     },
-
-    # GIT-VIT
+    {
+        "processor_name": "Salesforce/blip2-opt-2.7b",
+        "decoder_class": "Blip2ForConditionalGeneration",
+        "decoder_name": "Salesforce/blip2-opt-2.7b",
+        "requires_original": true,
+        "peft": false
+    },
     {
         "processor_name": "microsoft/git-base",
-        "decoder_class": AutoModelForCausalLM,
+        "decoder_class": "AutoModelForCausalLM",
         "decoder_name": "microsoft/git-base",
-        "tokenizer_name": "microsoft/git-base"
+        "tokenizer_name": "microsoft/git-base",
+        "peft": false
     },
-
     {
         "processor_name": "nlpconnect/vit-gpt2-image-captioning",
-        "decoder_class": VisionEncoderDecoderModel,
+        "decoder_class": "VisionEncoderDecoderModel",
         "decoder_name": "nlpconnect/vit-gpt2-image-captioning",
-        "processor_class": ViTImageProcessor
+        "processor_class": "ViTImageProcessor",
+        "peft": false
     },
-
     {
-        "processor_name": "google/vit-base-patch16-224-in21k",
-        "decoder_class": BertModel,
-        "decoder_name": "google-bert/bert-base-uncased",
-        "tokenizer_name":"google-bert/bert-base-uncased"
+        "processor_name": "meta-llama/Llama-3.2-11B-Vision-Instruct",
+        "decoder_class": "MllamaForConditionalGeneration",
+        "decoder_name": "meta-llama/Llama-3.2-11B-Vision-Instruct",
+        "peft": false
     },
-
-    #LLAMA 
-    {
-        "processor_name": "meta-llama/Llama-3.2-11B-Vision",
-        "decoder_class": MllamaForConditionalGeneration,
-        "decoder_name": "meta-llama/Llama-3.2-11B-Vision"
-    },
-
-    # Swin-BERT
-    {
-        "processor_name": "microsoft/swin-base-patch4-window12-384",
-        "decoder_class": BertModel,
-        "decoder_name": "google-bert/bert-base-uncased",
-        "tokenizer_name": "google-bert/bert-base-uncased"
-    },
-
-    # Qwen-VL
     {
         "processor_name": "Ertugrul/Qwen2-VL-7B-Captioner-Relaxed",
-        "decoder_class": Qwen2VLForConditionalGeneration,
-        "decoder_name": "Qwen/Qwen2-VL-7B-Instruct"
+        "decoder_class": "Qwen2VLForConditionalGeneration",
+        "decoder_name": "Qwen/Qwen2-VL-7B-Instruct",
+        "peft": false
     },
-
-    # DeepSeek Janus
     {
-        "processor_name": "deepseek-ai/Janus-Pro-7B",
-        "decoder_class": AutoModelForCausalLM,
-        "decoder_name": "deepseek-ai/Janus-Pro-7B",
-        "processor_class": VLChatProcessor,
-        "decoder_kwargs": {"trust_remote_code": True}
+        "processor_name": "Qwen/Qwen2.5-VL-7B-Instruct",
+        "decoder_class": "Qwen2_5_VLForConditionalGeneration",
+        "decoder_name": "Qwen/Qwen2.5-VL-7B-Instruct",
+        "peft": false
     }
 ```
 
