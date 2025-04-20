@@ -16,9 +16,8 @@ from transformers import (
 )
 from peft import PeftModel
 from PIL import Image
-from janus.models import  VLChatProcessor, MultiModalityCausalLM
 from transformers.data.data_collator import DataCollatorWithPadding
-from janus.utils.io import load_pil_images
+
 from qwen_vl_utils import process_vision_info
 import torch
 
@@ -134,40 +133,7 @@ class MultimodalCollator(DataCollatorWithPadding):
 
             return processed_inputs
 
-        elif isinstance(self.processor, VLChatProcessor):
-            conversations = [
-                {
-                    "role": "<|User|>",
-                    "content": f"<image_placeholder>\ncaption this image.",
-                    "images": [image["image_path"]],
-                }
-                for image in features
-            ]
-            processed_inputs = self.processor(
-                conversations=conversations,
-                images=images, 
-                paddint=True,
-                return_tensors="pt",
-                truncation=True,
-                force_batchify=True
-            )
         
-            labels = processed_inputs["input_ids"].clone()
-            labels[labels == self.tokenizer.pad_token_id] = -100
-            image_tokens = [self.processor.tokenizer.convert_tokens_to_ids(self.processor.image_token)]
-            for image_token_id in image_tokens:
-                labels[labels == image_token_id] = -100
-
-            processed_inputs["labels"] = labels
-            return {
-                "pixel_values":processed_inputs["pixel_values"],
-                "labels":labels,
-                # "attention_mask":processed_inputs["attention_mask"],
-                "images_emb_mask":processed_inputs["images_emb_mask"],
-                "images_seq_mask":processed_inputs["images_seq_mask"],
-                "input_ids":processed_inputs["input_ids"],
-                # "sft_format":processed_inputs["sft_format"]
-            }
         elif (isinstance(self.processor, BlipProcessor)):
             processed_inputs = self.processor(
                 images=images,
@@ -187,7 +153,6 @@ class MultimodalCollator(DataCollatorWithPadding):
                 return_tensors="pt",
                 padding="max_length"
             )
-
         labels = processed_inputs["input_ids"].clone() # Mask padding tokens.
         labels[labels == self.processor.tokenizer.pad_token_id] = -100
         
@@ -229,19 +194,6 @@ class MultimodalModel(torch.nn.Module):
             # Encoder-decoder models
             outputs = self.decoder(
                 **kwargs
-            )
-        elif isinstance(self.orig_instance, MultiModalityCausalLM):
-            # the language model is a wrapper for llammaforcasualLM
-            embeddings = self.decoder.prepare_inputs_embeds(**kwargs)
-            outputs = self.decoder.language_model(
-                inputs_embeds=embeddings,
-                attention_mask=kwargs["attention_mask"],
-                pad_token_id=self.tokenizer.eos_token_id,
-                bos_token_id=self.tokenizer.bos_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-                max_new_tokens=40,
-                # use_cache=True,
-                labels=kwargs["labels"]
             )
         else:
             # fallback 
