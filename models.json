@@ -31,6 +31,7 @@
         "processor_name": "meta-llama/Llama-3.2-11B-Vision-Instruct",
         "decoder_class": "MllamaForConditionalGeneration",
         "decoder_name": "meta-llama/Llama-3.2-11B-Vision-Instruct",
+        "processor_class": "MllamaProcessor",   
         "adapter_hub_id": "ashimdahal/meta-llama-Llama-3.2-11B-Vision-Instruct_meta-llama-Llama-3.2-11B-Vision-Instruct"
     },
     {
