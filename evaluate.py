@@ -1,4 +1,7 @@
 
+
+# evaluation.py (Explicit ViT-GPT2 Loading)
+
 # Import standard Python libraries for file operations, data structures, error handling, etc.
 import json                     # For reading model configurations and writing results
 import random                   # For selecting random samples to save
@@ -1198,6 +1201,9 @@ def main():
     # End of loop through model configurations
     print("\n" + "="*100 + "\nAll model configurations processed.\n" + "="*100)
 
+# --- Script Entry Point ---
+# This standard Python construct ensures the code inside only runs when the script is executed directly
+# (not when imported as a module)
 if __name__ == "__main__":
     print("Executing evaluation script...")
     main() # Call the main function to start the process
