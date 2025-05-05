@@ -1,3 +1,5 @@
+
+
 # evaluation.py (Explicit ViT-GPT2 Loading)
 
 # Import standard Python libraries for file operations, data structures, error handling, etc.
@@ -9,13 +11,14 @@ import os                       # For environment variables (like TOKENIZERS_PAR
 import traceback                # For printing detailed error stack traces
 import sys                      # For system-specific parameters and functions (like stderr)
 from pathlib import Path        # For object-oriented filesystem paths
-from qwen_vl_utils import process_vision_info
+
 # Import core machine learning and data handling libraries
 import torch                    # PyTorch library for tensors and neural networks
 from torch.utils.data import DataLoader, Dataset # PyTorch utility for loading data in batches
 import numpy as np              # NumPy for numerical operations (especially in metrics)
 from tqdm import tqdm           # Library for displaying progress bars during loops
 from PIL import Image           # Python Imaging Library for opening and manipulating images
+
 # Import necessary classes from the Hugging Face transformers library
 from transformers import (
     AutoTokenizer,              # Automatically loads the correct tokenizer based on model name
@@ -25,7 +28,6 @@ from transformers import (
     BlipForConditionalGeneration, # Specific model class for BLIP image captioning
     Blip2ForConditionalGeneration,# Specific model class for BLIP-2
     BartForConditionalGeneration, # Specific model class for BART (if used as a decoder)
-    DataCollatorWithPadding,
     GPT2LMHeadModel,            # Specific model class for GPT-2 (if used as a decoder)
     T5ForConditionalGeneration, # Specific model class for T5 (if used as a decoder)
     LlamaForCausalLM,           # Specific model class for Llama (if used as a decoder)
@@ -80,14 +82,14 @@ except ImportError as e:
 # --- Configuration ---
 # Define file paths and directories using pathlib for better path handling
 # Use .resolve() to get the absolute path, which can be helpful in environments like Kaggle/Colab
-VALID_DATA_DIR = Path("./drive/MyDrive/valid_dataset").resolve() # Directory with validation images
+VALID_DATA_DIR = Path("../../kaggle/input/valid-dataset/valid_dataset").resolve() # Directory with validation images
 MODEL_CONFIG_PATH = Path("./captioning_image/models.json").resolve() # Path to the JSON file defining models to evaluate
 ADAPTER_RESULTS_DIR = Path("./results/").resolve()      # Default directory to look for locally saved PEFT adapters
 EVALUATION_OUTPUT_DIR = Path("./evaluation_results/").resolve() # Directory where evaluation results (metrics, samples) will be saved
 HF_CACHE_DIR = "./hf_cache"                             # Optional directory for caching Hugging Face downloads (models, datasets)
 DEFAULT_EVAL_BATCH_SIZE = 4                             # Default number of samples per batch during evaluation
-NUM_EVAL_SAMPLES = 50                                  # Maximum number of validation samples to process for each model
-NUM_SAVE_SAMPLES = 50                                 # Maximum number of prediction/reference pairs to save in the output file
+NUM_EVAL_SAMPLES = 100                                  # Maximum number of validation samples to process for each model
+NUM_SAVE_SAMPLES = 100                                  # Maximum number of prediction/reference pairs to save in the output file
 MAX_CAPTION_LENGTH = 128                                # Define a fixed max length for captions/padding
 
 # --- Model Type Definitions ---
@@ -108,37 +110,6 @@ REQUIRES_ORIGINAL_IMPLEMENTATION = (
     Qwen2_5_VLForConditionalGeneration,
     MllamaForConditionalGeneration,
 )
-
-
-
-# Make sure necessary processors are imported, e.g.:
-# from transformers import Blip2Processor, ViTImageProcessor, BlipProcessor, AutoProcessor
-# Assuming MllamaProcessor, Qwen*Processors etc. are defined/imported elsewhere
-# Assuming format_data, process_vision_info are defined elsewhere
-
-# Placeholder for the actual Llama-3.2 Vision processor class if you know it
-# Example: from transformers import Llama3_2VisionProcessor # Hypothetical
-Llama3_2VisionProcessor = None # Replace None with the actual class if available
-
-
-def format_data(sample):
-    return [
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "image",
-                    "image": sample["image_path"],
-                },
-                {
-                    "type": "text",
-                    "text": "Give caption to the image",
-                },
-            ],
-        },
-    ]
-
-
 
 # --- Helper Function for JSON Serialization ---
 def convert_to_serializable(obj):
@@ -161,9 +132,6 @@ def convert_to_serializable(obj):
     elif isinstance(obj, (np.void)): # Check for NumPy void type (sometimes occurs in metrics)
         return None # Convert to None
     return obj # Return object unchanged if not a NumPy type needing conversion
-
-
-
 
 # --- Metrics Calculation Function ---
 def calculate_metrics_hf(references, predictions):
@@ -235,346 +203,208 @@ def calculate_metrics_hf(references, predictions):
     # Convert any NumPy types in the results to standard Python types before returning
     return convert_to_serializable(results)
 
-
-# Assume format_data and process_vision_info are defined elsewhere as in your original code
-# If not, you'll need to include their definitions or adjust the logic.
-# Example placeholder definitions if needed:
-def format_data(sample):
-    """Placeholder: Formats data for chat templates. Adjust for Llama-3.2 if needed."""
-    # This format is likely specific to certain models (like Qwen/Mllama)
-    # Llama-3.2 might use a different template structure.
-    return [
-        {
-            "role": "user",
-            "content": [
-                {"type": "image", "image": sample["image_path"]}, # Might need actual image, not path here
-                {"type": "text", "text": "Give caption to the image"}, # Or use sample["text"]
-            ],
-        },
-    ]
-
-def process_vision_info(example):
-     """Placeholder: Extracts image from formatted data. Specific to Qwen?"""
-     # This function's logic depends heavily on how format_data structures things
-     # and what the processor expects.
-     image_content = None
-     for item in example:
-         if item.get("role") == "user":
-             for content_part in item.get("content", []):
-                 if content_part.get("type") == "image":
-                     image_content = content_part.get("image")
-                     break # Assume one image per user message
-             if image_content:
-                 break
-     # This placeholder just returns the found image content
-     # The original Qwen util might do more complex processing
-     return [image_content] # Return as list based on original usage
-
-
-# Custom Data Collator to handle multimodal inputs
-class MultimodalCollator(DataCollatorWithPadding):
+# --- Custom Collator with Manual Padding ---
+class MultimodalCollator:
     """
-    Custom data collator for multimodal models.
-
-    Handles padding for text inputs and prepares image inputs according
-    to the requirements of different processor types. Specifically addresses
-    the nested list requirement for models like Llama-3.2 Vision and Qwen-VL.
+    Custom data collator that handles multimodal features (image + text).
+    It manually pads text sequences to a fixed maximum length.
     """
-    def __init__(self, processor, tokenizer):
-        # Initialize with the text tokenizer for text padding
-        super().__init__(tokenizer)
+    def __init__(self, processor, tokenizer, max_length=MAX_CAPTION_LENGTH):
+        """
+        Initializes the collator.
+
+        Args:
+            processor: The processor object (e.g., AutoProcessor instance).
+            tokenizer: The tokenizer object (e.g., AutoTokenizer instance).
+            max_length (int): The fixed length to pad/truncate text sequences to.
+        """
         self.processor = processor
-        self.tokenizer = tokenizer # Keep a reference to the tokenizer
+        self.tokenizer = tokenizer
+        self.max_length = max_length # Use the globally defined max length
 
-        # --- Optional: Set PAD token if missing ---
-        # Some models require a pad token. If the tokenizer doesn't have one,
-        # setting it to the EOS token is a common practice.
-        if self.tokenizer.pad_token is None:
-            print("Warning: Tokenizer does not have a pad token. Setting pad_token to eos_token.", file=sys.stderr)
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-            # If the model config exists and needs updating (might be redundant if done in select_best_model_inference)
-            # if hasattr(self.processor, 'model') and hasattr(self.processor.model, 'config'):
-            #     self.processor.model.config.pad_token_id = self.tokenizer.eos_token_id
+        # --- Ensure tokenizer has a valid pad_token_id ---
+        if self.tokenizer.pad_token_id is None:
+            if self.tokenizer.eos_token_id is not None:
+                print(f"Collator: No pad_token_id found. Setting to eos_token_id ({self.tokenizer.eos_token_id})")
+                self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+            else:
+                # Last resort: Force Qwen PAD token if EOS is also missing
+                QWEN_END_TOKEN_ID = 151643 # Common ID for Qwen tokenizers
+                print(f"Collator: WARNING - No PAD or EOS token ID found. Forcing pad_token_id to {QWEN_END_TOKEN_ID} (Qwen default).")
+                self.tokenizer.pad_token_id = QWEN_END_TOKEN_ID
+                # Also set the pad_token string if possible
+                if self.tokenizer.pad_token is None:
+                    self.tokenizer.pad_token = "<|endoftext|>" # Qwen's typical EOS/PAD token string
 
-
-        # --- Model-specific prompts (example for MLLaMA) ---
-        # Keep or adapt model-specific settings as needed
-        if isinstance(self.processor, MllamaProcessor):
-            # This prompt might need adjustment based on actual training/fine-tuning
-            self.text_prompt = "<|image|> Give caption to this image like a normal human being. "
-            print("Note: Using Mllama-specific text prompt structure.")
-        else:
-            self.text_prompt = None # Or a default prompt structure
+        print(f"Collator initialized. Using pad_token_id: {self.tokenizer.pad_token_id}")
+        # --- End pad_token_id setup ---
 
     def __call__(self, features):
         """
-        Processes a batch of features (list of dictionaries).
+        Processes a list of features (dictionaries) into a batch.
 
         Args:
-            features (List[dict]): A list where each dictionary is expected
-                                   to contain at least 'image' and 'text' keys.
+            features (list): A list of dictionaries, where each dictionary
+                             represents a sample and should contain 'image' and 'text' keys.
 
         Returns:
-            dict: A dictionary containing processed batch tensors ready for the model,
-                  including 'input_ids', 'attention_mask', 'pixel_values' (or similar),
-                  and 'labels'. The exact keys depend on the processor type.
+            dict: A dictionary containing the batched and processed tensors
+                  (e.g., 'pixel_values', 'input_ids', 'attention_mask', 'labels').
+                  Returns an empty dictionary if the batch is invalid or empty.
         """
-        # Extract raw images and text from the features batch
-        # Assumes each feature dict has 'image' (PIL Image) and 'text' (string caption)
-        raw_images = [item["image"] for item in features]
-        text_items = [item["text"] for item in features] # Ground truth captions
+        # --- Debug: Print types at start of call ---
+        # print(f"\n--- Collator __call__ ---") # Keep this commented unless actively debugging this part
+        # print(f"Processor type: {type(self.processor)}")
+        # print(f"Tokenizer type: {type(self.tokenizer)}")
+        # --- End Debug ---
 
-        # --- Logic Branching Based on Processor Type ---
-
-        # 1. BLIP-2 Processor
-        if isinstance(self.processor, Blip2Processor):
-            # Blip2Processor typically handles image and text together
-            # It often requires text prompts for captioning, not just labels.
-            # Construct prompts if needed, or use ground truth text if training.
-            # For inference/evaluation, usually an instruction prompt is needed.
-            # Using ground truth text here assumes training/fine-tuning context.
-            prompts = [f"Question: What is this image about? Answer:"] * len(features) # Example prompt for eval
-            processed_inputs = self.processor(
-                images=raw_images,
-                text=prompts, # Use prompts for generation
-                # text=text_items, # Use ground truth if fine-tuning BLIP-2 decoder
-                return_tensors="pt",
-                padding="longest", # Or "max_length"
-                truncation=True,
-                max_length=128 # Adjust as needed
-            )
-            # For Blip-2 fine-tuning, labels might be derived from input_ids
-            # For generation evaluation, labels are the ground truth text_items,
-            # tokenized separately. We'll handle labels outside this block for eval.
-            # Let's prepare labels based on text_items for metric calculation later
-            labels = self.tokenizer(
-                text=text_items,
-                padding="longest", # Match generation padding if possible
-                return_tensors="pt",
-                truncation=True,
-                max_length=128 # Match generation length if possible
-            ).input_ids
-            # Mask padding tokens in labels
-            labels[labels == self.tokenizer.pad_token_id] = -100
-            processed_inputs["labels"] = labels # Add labels for loss/metrics
-            return processed_inputs
-
-        # 2. ViTImageProcessor (Commonly used with separate text decoder like GPT-2)
-        elif isinstance(self.processor, ViTImageProcessor):
-            # Process images separately
-            pixel_values = self.processor(images=raw_images, return_tensors="pt").pixel_values
-            # Tokenize text labels separately using the text tokenizer
-            # These are the target captions the decoder should generate
-            labels = self.tokenizer(
-                text=text_items,
-                padding="longest", # Or "max_length"
-                truncation=True,
-                return_tensors="pt",
-                max_length=128 # Max caption length
-            ).input_ids
-            # Mask padding tokens in labels
-            labels[labels == self.tokenizer.pad_token_id] = -100
-
-            # For models like ViT-GPT2, the input to the decoder during generation
-            # usually starts with a BOS token, and pixel_values are handled by the encoder.
-            # The batch needs pixel_values for the encoder and labels for the decoder target.
-            return {
-                "pixel_values": pixel_values,
-                "labels": labels,
-                # No input_ids/attention_mask needed for encoder-decoder generate typically
-            }
-
-        # 3. Processors requiring nested images (Qwen-VL, MLLaMA, Llama-3.2 Vision)
-        # Replace Llama3_2VisionProcessor with the actual class name if available
-        elif isinstance(self.processor, (
-                Qwen2VLProcessor,
-                # Qwen2_5_VLProcessor, # If exists
-                MllamaProcessor,
-                # Llama3_2VisionProcessor # << Add actual Llama 3.2 Processor here
-            )) or ("llama-3.2" in getattr(self.processor, 'name_or_path', '').lower()): # Fallback check
-            # --- Prepare inputs for chat/instruction models ---
-            # Apply model-specific chat templating.
-            # NOTE: Ensure format_data provides the correct structure and content
-            # (e.g., actual image object, not path) needed by apply_chat_template
-            # and that the template itself is correct for the specific model.
-            try:
-                 # Re-create features potentially with image paths replaced by image objects if needed by format_data
-                 formatted_features_input = [{"image": img, "text": txt, "image_path": img.filename if hasattr(img, 'filename') else None}
-                                             for img, txt in zip(raw_images, text_items)]
-                 formatted_features = [format_data(f) for f in formatted_features_input]
-
-                 # Apply the chat template provided by the processor/tokenizer
-                 texts_for_processing = [
-                    self.processor.apply_chat_template(
-                        example,
-                        tokenize=False, # Process text and images together later
-                        add_generation_prompt=True # Important for inference
-                    ) for example in formatted_features
-                 ]
-            except Exception as e:
-                 print(f"Error during formatting/templating: {e}", file=sys.stderr)
-                 # Handle error - maybe return an empty dict or raise exception
-                 # For now, falling back to simpler text might be safer if formatting fails
-                 texts_for_processing = [ "Describe the image." ] * len(features) # Basic fallback
-
-
-            # --- Prepare images in the required NESTED format ---
-            # Check if specific preprocessing like process_vision_info is needed (e.g., for Qwen)
-            # This implementation assumes Llama-3.2 does NOT need process_vision_info by default.
-            if isinstance(self.processor, (Qwen2VLProcessor)): # Add other types if they need it
-                 print("Applying Qwen-specific process_vision_info.")
-                 try:
-                     # Assumes process_vision_info expects the output of format_data
-                     processed_images = [process_vision_info(example)[0] for example in formatted_features]
-                     nested_images = [[img] for img in processed_images] # Wrap in inner list
-                 except Exception as e:
-                     print(f"Error using process_vision_info: {e}. Falling back to raw images.", file=sys.stderr)
-                     nested_images = [[img] for img in raw_images] # Fallback
+        # --- Filter out invalid features ---
+        valid_features = []
+        valid_texts = [] # Keep track of valid texts separately
+        for i, item in enumerate(features):
+            img = item.get('image')
+            txt = item.get('text')
+            # Check for valid image (not None) and valid text (is a non-empty string)
+            if img is not None and isinstance(txt, str) and txt.strip():
+                valid_features.append(item)
+                valid_texts.append(txt) # Add text to list only if feature is valid
             else:
-                 # Default for Mllama, Llama-3.2: just nest the raw images
-                 nested_images = [[img] for img in raw_images]
+                print(f"Warning: Skipping invalid feature {i}. Image type: {type(img)}, Text type: {type(txt)}, Text: '{txt}'", file=sys.stderr)
+        # --- End Filtering ---
 
-            # --- Process text and images together ---
-            # The processor handles combining text template and image embeddings
-            processed_inputs = self.processor(
-                text=texts_for_processing,
-                images=nested_images, # <<< Pass the NESTED list here
-                return_tensors="pt",
-                padding=True # Pad to longest sequence in the batch
-                # truncation=True, # Consider adding truncation if needed
-                # max_length=... # Set appropriate max combined length
-            )
+        # If no valid features remain after filtering, return an empty batch
+        if not valid_features:
+            print("Warning: No valid features in batch after filtering!", file=sys.stderr)
+            return {}
 
-            # --- Prepare Labels for Training/Evaluation ---
-            # Labels are typically the ground truth text captions, tokenized separately,
-            # but for autoregressive models trained on combined sequences, labels are
-            # often derived from input_ids, masking prompt/image tokens.
+        # --- Process Images ---
+        images = [item["image"] for item in valid_features] # Use only valid features
+        pixel_values = None
+        flattened_patches = None
+        try:
+            # --- Refined Image Processing Logic ---
+            image_processor_obj = None
+            # Case 1: Processor has a dedicated image_processor attribute
+            if hasattr(self.processor, 'image_processor') and self.processor.image_processor is not None:
+                 # print(f"Collator: Using processor.image_processor ({type(self.processor.image_processor)}) for images.")
+                 image_processor_obj = self.processor.image_processor
+            # Case 2: Processor *is* an image processor
+            elif isinstance(self.processor, ViTImageProcessor):
+                 # print(f"Collator: Using processor directly as image processor ({type(self.processor)}).")
+                 image_processor_obj = self.processor
+            # Case 3: Handle combined processors like Qwen2VLProcessor
+            elif isinstance(self.processor, (Qwen2VLProcessor, Qwen2_5_VLProcessor)):
+                 # print(f"Collator: Using processor directly for Qwen-VL type ({type(self.processor)}).")
+                 # Qwen processor might handle images directly when called without text
+                 image_processor_obj = self.processor
+            # Fallback/Error
+            else:
+                 print(f"Collator Warning: Unsure how to extract image processor from {type(self.processor)}. Attempting direct call.", file=sys.stderr)
+                 image_processor_obj = self.processor # Might fail
 
-            # Clone input_ids to create labels
-            labels = processed_inputs["input_ids"].clone()
+            # Call the determined image processor
+            if image_processor_obj is not None and callable(image_processor_obj):
+                 # Pass only images, explicitly avoiding text arguments
+                 image_inputs = image_processor_obj(images=images, return_tensors="pt")
+                 pixel_values = image_inputs.get('pixel_values')
+                 flattened_patches = image_inputs.get('flattened_patches') # For Pix2Struct
+            else:
+                 raise TypeError(f"Could not obtain a callable image processor from {type(self.processor)}")
 
-            # Mask padding tokens
-            labels[labels == self.tokenizer.pad_token_id] = -100
+            # Check if at least one image representation was obtained
+            if pixel_values is None and flattened_patches is None:
+                 print("Error: Image processing did not yield 'pixel_values' or 'flattened_patches'.", file=sys.stderr)
+                 return {}
+            # --- End Refined Image Processing Logic ---
 
-            # Mask image tokens (crucial)
-            # Find the image token ID dynamically
-            try:
-                # Common special tokens: <image>, <im_start>, etc. Check model docs.
-                image_token = "<image>" # Default guess, VERIFY THIS for Llama-3.2
-                image_token_id = self.tokenizer.convert_tokens_to_ids(image_token)
-                if image_token_id == self.tokenizer.unk_token_id:
-                     print(f"Warning: Image token '{image_token}' not found in tokenizer. Trying processor attribute.", file=sys.stderr)
-                     # Try processor attribute as fallback (less common)
-                     image_token_id = getattr(self.processor, 'image_token_id', None)
+        except Exception as e:
+            print(f"Error processing images in collator: {e}", file=sys.stderr)
+            traceback.print_exc()
+            return {} # Return empty on error
+        # --- End Image Processing ---
 
-                if image_token_id is None or image_token_id == self.tokenizer.unk_token_id:
-                     print(f"Error: Could not determine image token ID for masking.", file=sys.stderr)
-                     # Handle error: maybe skip masking or raise exception
-                     image_tokens_to_mask = []
-                else:
-                    print(f"Found image token ID: {image_token_id}")
-                    image_tokens_to_mask = [image_token_id]
-
-            except Exception as e:
-                 print(f"Error finding image token ID: {e}", file=sys.stderr)
-                 image_tokens_to_mask = []
-
-
-            # Handle Qwen specific multi-token image placeholders if needed
-            if isinstance(self.processor, Qwen2VLProcessor):
-                 # Qwen uses specific system tokens around the image token visually
-                 # but the actual replacement might just be one token ID during processing.
-                 # Double-check Qwen processor/model docs for label masking.
-                 # The original code had: [151652, 151653, 151655]. Verify these.
-                 # Let's stick to the dynamically found one unless Qwen is confirmed different.
-                 print("Note: Check Qwen image token masking requirements.")
-                 # qwen_specific_tokens = [151652, 151653, 151655] # Example from original code
-                 # image_tokens_to_mask.extend(t for t in qwen_specific_tokens if t not in image_tokens_to_mask)
+        # --- Tokenize Text and Manually Pad/Truncate ---
+        # Use the filtered list of valid texts
+        try:
+            # print(f"Collator: Tokenizing {len(valid_texts)} valid texts...") # Debug
+            # Tokenize without automatic padding/truncation
+            # `return_tensors=None` returns lists of IDs
+            # Ensure ONLY text is passed here
+            text_tokenized = self.tokenizer(text=valid_texts, return_tensors=None, add_special_tokens=True, padding=False, truncation=False)
+        except TypeError as te:
+             # Catch the specific error if it happens here
+             print(f"!!! TypeError during self.tokenizer() call in collator: {te}", file=sys.stderr)
+             print(f"    Tokenizer Type: {type(self.tokenizer)}")
+             print(f"    Number of texts: {len(valid_texts)}")
+             traceback.print_exc()
+             return {}
+        except Exception as e:
+             print(f"Error during initial tokenization in collator: {e}", file=sys.stderr)
+             traceback.print_exc()
+             return {}
 
 
-            # Perform the masking
-            for token_id_to_mask in image_tokens_to_mask:
-                 labels[labels == token_id_to_mask] = -100
-
-            # --- Mask Prompt Tokens ---
-            # Mask tokens corresponding to the input prompt/template part
-            # Find where the response (label) part starts. This can be complex.
-            # A common strategy is to mask everything *before* the final assistant/response marker.
-            # This requires knowing the chat template structure.
-            # Simpler (less accurate) method: mask all non -100 tokens up to the first non-masked token?
-            # For now, we only mask padding and image tokens. Refine if needed for training.
-
-            processed_inputs["labels"] = labels
-            return processed_inputs
-
-        # 4. Original BLIP Processor
-        elif isinstance(self.processor, BlipProcessor):
-            # Similar to Blip2, but uses BlipProcessor
-            prompts = [f"A picture of"] * len(features) # Example prompt
-            processed_inputs = self.processor(
-                images=raw_images,
-                text=prompts, # Use prompts for generation
-                # text=text_items, # Use ground truth if fine-tuning
-                return_tensors="pt",
-                padding="longest", # Or "max_length"
-                truncation=True,
-                max_length=128 # Adjust as needed
-            )
-            # Prepare labels based on text_items for metric calculation later
-            labels = self.tokenizer(
-                text=text_items,
-                padding="longest",
-                return_tensors="pt",
-                truncation=True,
-                max_length=128
-            ).input_ids
-            labels[labels == self.tokenizer.pad_token_id] = -100
-            processed_inputs["labels"] = labels
-            return processed_inputs
-
-        # 5. Fallback / Default Processor Handling
+        input_ids_list = text_tokenized['input_ids']
+        # Generate attention masks manually if not returned by tokenizer (some don't when padding=False)
+        if 'attention_mask' not in text_tokenized:
+             attention_mask_list = [[1] * len(ids) for ids in input_ids_list]
         else:
-            print(f"Warning: Using default processing logic for processor type {type(self.processor)}. May not be optimal.", file=sys.stderr)
-            try:
-                # Assume a general processor that can handle images and text
-                processed_inputs = self.processor(
-                    images=raw_images,
-                    text=text_items, # Pass ground truth text as context/labels
-                    return_tensors="pt",
-                    padding="longest", # Use "longest" or "max_length"
-                    truncation=True,
-                    # max_length=... # Define appropriate max length
-                )
-                # Assume labels can be derived from input_ids (common for generation models)
-                if "input_ids" in processed_inputs:
-                    labels = processed_inputs["input_ids"].clone()
-                    labels[labels == self.tokenizer.pad_token_id] = -100
-                    # Attempt to mask image tokens if possible (best effort)
-                    try:
-                        image_token_id = self.tokenizer.convert_tokens_to_ids("<image>")
-                        if image_token_id != self.tokenizer.unk_token_id:
-                             labels[labels == image_token_id] = -100
-                    except:
-                        pass # Ignore if image token doesn't exist or fails
-                    processed_inputs["labels"] = labels
-                else:
-                     # If no input_ids, maybe tokenize labels separately?
-                     label_tensors = self.tokenizer(text=text_items, padding="longest", return_tensors="pt", truncation=True)
-                     labels = label_tensors.input_ids
-                     labels[labels == self.tokenizer.pad_token_id] = -100
-                     processed_inputs["labels"] = labels
+             attention_mask_list = text_tokenized['attention_mask']
 
-                return processed_inputs
+        padded_input_ids = []
+        padded_attention_mask = []
+        pad_token_id = self.tokenizer.pad_token_id # Get the assured pad token ID
 
-            except Exception as e:
-                print(f"Error during default processing: {e}", file=sys.stderr)
-                print("Features:", features) # Log features for debugging
-                # Return an empty dict or re-raise to signal critical failure
-                return {} # Or raise e
+        for ids, mask in zip(input_ids_list, attention_mask_list):
+            current_length = len(ids)
+            if current_length > self.max_length:
+                # Truncate
+                padded_ids = ids[:self.max_length]
+                padded_mask = mask[:self.max_length]
+            elif current_length < self.max_length:
+                # Pad
+                padding_length = self.max_length - current_length
+                padded_ids = ids + ([pad_token_id] * padding_length)
+                padded_mask = mask + ([0] * padding_length) # 0 for padding in attention mask
+            else:
+                # No padding/truncation needed
+                padded_ids = ids
+                padded_mask = mask
 
+            padded_input_ids.append(padded_ids)
+            padded_attention_mask.append(padded_mask)
+        # --- End Manual Padding ---
 
+        # --- Convert lists to tensors ---
+        try:
+            input_ids_tensor = torch.tensor(padded_input_ids, dtype=torch.long)
+            attention_mask_tensor = torch.tensor(padded_attention_mask, dtype=torch.long)
+        except Exception as e:
+             print(f"Error converting padded sequences to tensors: {e}", file=sys.stderr)
+             traceback.print_exc()
+             return {}
 
+        # Prepare labels (same as input_ids for captioning, but mask padding tokens)
+        labels_tensor = input_ids_tensor.clone()
+        labels_tensor[labels_tensor == pad_token_id] = -100 # Use -100 ignore index for loss calculation
 
+        # --- Construct the final batch dictionary ---
+        batch = {
+            "input_ids": input_ids_tensor,
+            "attention_mask": attention_mask_tensor,
+            "labels": labels_tensor, # Labels used for calculating loss during training/evaluation
+        }
+
+        # Add image features based on what was processed
+        if pixel_values is not None:
+            batch["pixel_values"] = pixel_values
+        if flattened_patches is not None:
+            batch["flattened_patches"] = flattened_patches
+        # Add other potential keys if needed by specific models
+
+        # print(f"--- Collator __call__ End (Batch Keys: {list(batch.keys())}) ---") # Debug
+        return batch
+# --- End Custom Collator ---
 
 
 # --- Model Loading Function ---
@@ -916,7 +746,7 @@ def evaluate_model(
     # 2. DataLoader
     try:
         # Instantiate the custom data collator (defined locally now)
-        collator = MultimodalCollator(processor, tokenizer)
+        collator = MultimodalCollator(processor, tokenizer, max_length=MAX_CAPTION_LENGTH)
         # Create the PyTorch DataLoader
         # shuffle=False: Evaluate in a fixed order
         # collate_fn=collator: Use the custom collator to form batches
@@ -1378,3 +1208,5 @@ if __name__ == "__main__":
     print("Executing evaluation script...")
     main() # Call the main function to start the process
     print("Evaluation script finished.")
+
+
