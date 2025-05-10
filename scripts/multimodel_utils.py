@@ -19,7 +19,10 @@ from transformers import (
     Qwen2VLProcessor,
     Qwen2_5_VLForConditionalGeneration,
     VisionEncoderDecoderModel,
-    GitForCausalLM # Added as it's a distinct case for generation
+    GitForCausalLM,
+    MllamaForConditionalGeneration,
+    Qwen2VLForConditionalGeneration,
+    Qwen2_5_VLForConditionalGeneration
 )
 from peft import PeftModel
 from transformers.data.data_collator import DataCollatorWithPadding
@@ -173,15 +176,6 @@ class MultimodalModel(torch.nn.Module):
         else:
             self.orig_instance = self.decoder
         
-        if freeze_vision_encoder:
-            if hasattr(self.orig_instance, 'vision_model'):
-                for param in self.orig_instance.vision_model.parameters(): param.requires_grad = False
-                logger.info("Vision encoder weights frozen.")
-            elif hasattr(self.orig_instance, 'encoder') and hasattr(self.orig_instance.config, 'is_vision_encoder_decoder') and self.orig_instance.config.is_vision_encoder_decoder:
-                for param in self.orig_instance.encoder.parameters(): param.requires_grad = False
-                logger.info("Vision part of VisionEncoderDecoderModel frozen.")
-            else: logger.warning("Model does not have a 'vision_model' or standard 'encoder' attribute to freeze.")
-
     def gradient_checkpointing_enable(self, *args, **kwargs):
         if hasattr(self.orig_instance, 'gradient_checkpointing_enable'):
             return self.orig_instance.gradient_checkpointing_enable(*args, **kwargs)
@@ -192,132 +186,44 @@ class MultimodalModel(torch.nn.Module):
     def forward(self, **kwargs):
         outputs = self.decoder(**kwargs)
         return outputs
+    
+    def generate_caption(self, batch):
+        """Generate caption for an image with better error handling and dynamic token management.
+        Returns:
+            Generated caption string
+        """
+        for k in batch:
+            if isinstance(batch[k], torch.Tensor):
+                batch[k] = batch[k].to(self.decoder.device)
 
-    def generate_caption(self, pil_image: Image.Image, max_length=50, num_beams=5):
-        if not isinstance(pil_image, Image.Image):
-            logger.error("Input to generate_caption must be a PIL Image.")
-            raise ValueError("Input must be a PIL Image.")
+        if "labels" in batch:
+            labels = batch.pop("labels")
 
-        try:
-            model_device = next(self.decoder.parameters()).device
-        except StopIteration: 
-            model_device = getattr(self.decoder, 'device', torch.device("cpu"))
-            if str(model_device) == "meta":
-                target_device_fallback = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                logger.info(f"Model on meta device, moving to {target_device_fallback} for generation.")
-                self.decoder.to(target_device_fallback)
-                model_device = target_device_fallback
+        if isinstance(self.orig_instance, (
+            MllamaForConditionalGeneration,
+            Qwen2VLForConditionalGeneration,
+            Qwen2_5_VLForConditionalGeneration
+        )):
+            generated_ids = self.decoder.generate(**batch, max_new_tokens=50)
+            generated_ids = [out_ids[len(in_ids) :] for in_ids, out_ids in zip(batch.input_ids, generated_ids)]
+
+        elif isinstance(self.orig_instance, (
+            BertLMHeadModel,
+            GPT2LMHeadModel,
+            BertModel 
+        )):
+            self.decoder.generation_config.decoder_start_token_id = (
+                self.tokenizer.cls_token_id if self.tokenizer.cls_token_id 
+                else self.tokenizer.bos_token_id
+            )
+            generated_ids = self.decoder.generate(pixel_values = batch["pixel_values"])
+            labels[labels==-100] = 0
+        else:
+            generated_ids = model.decoder.generate(pixel_values = batch["pixel_values"])
         
-        logger.debug(f"Generating caption on device: {model_device} for model type {type(self.orig_instance).__name__}")
-        self.decoder.eval()
-        
-        processed_for_generate = {}
-        generate_prompt_text = "Give caption to the image" 
-
-        if isinstance(self.orig_instance, (BlipForConditionalGeneration, Blip2ForConditionalGeneration)):
-            logger.debug(f"Preprocessing for BLIP/BLIP-2 style model: {type(self.orig_instance).__name__}")
-            prompt = "a photography of" 
-            try:
-                inputs = self.processor(images=pil_image, text=prompt, return_tensors="pt").to(model_device)
-                processed_for_generate = {**inputs}
-            except Exception as e_proc: 
-                logger.warning(f"Processor error with text prompt for {type(self.orig_instance).__name__}: {e_proc}. Trying image only.")
-                inputs = self.processor(images=pil_image, return_tensors="pt").to(model_device)
-                processed_for_generate = {**inputs}
-        elif isinstance(self.orig_instance, (Qwen2VLForConditionalGeneration, Qwen2_5_VLForConditionalGeneration, MllamaForConditionalGeneration)):
-            logger.debug(f"Preprocessing for Chat-Templated model: {type(self.orig_instance).__name__}")
-            messages = [{"role": "user", "content": [{"type": "image"}, {"type": "text", "text": generate_prompt_text}]}]
-            try:
-                text_prompt_chat_formatted = self.processor.apply_chat_template(
-                    messages, tokenize=False, add_generation_prompt=True
-                )
-                inputs = self.processor(
-                    text=[text_prompt_chat_formatted], 
-                    images=[pil_image], 
-                    return_tensors="pt", padding=True, truncation=True,
-                    max_length=getattr(self.tokenizer, 'model_max_length', 2048)
-                ).to(model_device)
-                processed_for_generate = {**inputs}
-            except Exception as e_chat_proc:
-                 logger.error(f"Error during chat template processing for {type(self.orig_instance).__name__}: {e_chat_proc}")
-                 raise 
-        elif isinstance(self.orig_instance, VisionEncoderDecoderModel) or \
-             (hasattr(self.orig_instance, 'config') and getattr(self.orig_instance.config, 'is_encoder_decoder', False) and isinstance(self.processor, ViTImageProcessor)):
-            logger.debug(f"Preprocessing for VisionEncoderDecoderModel style model: {type(self.orig_instance).__name__}")
-            inputs = self.processor(images=pil_image, return_tensors="pt").to(model_device)
-            processed_for_generate["pixel_values"] = inputs.pixel_values
-            if hasattr(inputs, 'attention_mask'):
-                 processed_for_generate["attention_mask"] = inputs.attention_mask
-        elif isinstance(self.orig_instance, GitForCausalLM): 
-            logger.debug(f"Preprocessing for GIT style model: {type(self.orig_instance).__name__}")
-            inputs = self.processor(images=pil_image, return_tensors="pt").to(model_device)
-            processed_for_generate["pixel_values"] = inputs.pixel_values
-        else: 
-            logger.debug(f"Using generic preprocessing for model: {type(self.orig_instance).__name__}")
-            try:
-                inputs = self.processor(images=pil_image, text=generate_prompt_text, return_tensors="pt").to(model_device)
-                processed_for_generate = {**inputs}
-            except Exception as e_generic_proc: 
-                logger.warning(f"Generic processor with text prompt failed for {type(self.orig_instance).__name__}: {e_generic_proc}. Trying image only.")
-                inputs = self.processor(images=pil_image, return_tensors="pt").to(model_device)
-                processed_for_generate = {**inputs}
-
-
-        if not processed_for_generate:
-            logger.error(f"Input preprocessing failed for model type {type(self.orig_instance).__name__}. Inputs are empty.")
-            return "Error: Input preprocessing failed."
-
-        output_ids = None
-        with torch.no_grad():
-            try:
-                gen_kwargs = {"max_length": max_length, "num_beams": num_beams, "early_stopping": True}
-                m_config = getattr(self.decoder, 'config', None) 
-                if m_config:
-                    if hasattr(m_config, 'decoder_start_token_id') and m_config.decoder_start_token_id is not None: 
-                        gen_kwargs.setdefault("decoder_start_token_id", m_config.decoder_start_token_id)
-                    if hasattr(m_config, 'pad_token_id') and m_config.pad_token_id is not None: 
-                        gen_kwargs.setdefault("pad_token_id", m_config.pad_token_id)
-                    if hasattr(m_config, 'eos_token_id') and m_config.eos_token_id is not None : 
-                        gen_kwargs.setdefault("eos_token_id", m_config.eos_token_id)
-                
-                logger.debug(f"Calling self.decoder.generate with kwargs: {gen_kwargs.keys()} and input keys: {processed_for_generate.keys()}")
-                output_ids = self.decoder.generate(**processed_for_generate, **gen_kwargs)
-
-            except RuntimeError as e_gen:
-                if "CUDA out of memory" in str(e_gen) and model_device.type == "cuda":
-                    logger.warning(f"CUDA OOM during generation, retrying with reduced beams.")
-                    if torch.cuda.is_available(): torch.cuda.empty_cache(); gc.collect()
-                    gen_kwargs["num_beams"] = max(1, num_beams // 2)
-                    try:
-                        output_ids = self.decoder.generate(**processed_for_generate, **gen_kwargs)
-                    except RuntimeError as e_oom_retry: 
-                        logger.warning(f"CUDA OOM on retry for. Attempting CPU fallback.")
-                        if torch.cuda.is_available(): torch.cuda.empty_cache(); gc.collect()
-                        original_device = model_device
-                        cpu_device = torch.device("cpu")
-                        try:
-                            logger.info(f"Moving model to CPU for OOM fallback.")
-                            self.decoder.to(cpu_device)
-                            cpu_processed_for_generate = {k: v.to(cpu_device) if isinstance(v, torch.Tensor) else v for k,v in processed_for_generate.items()}
-                            output_ids = self.decoder.generate(**cpu_processed_for_generate, **gen_kwargs)
-                            logger.info(f"Moving model back to original device: {original_device}")
-                            self.decoder.to(original_device) 
-                        except Exception as e_cpu_fb:
-                            logger.error(f"Error during CPU fallback: {e_cpu_fb}")
-                            if str(self.decoder.device) != str(original_device): self.decoder.to(original_device)
-                            raise e_cpu_fb 
-                else:
-                    logger.error(f"RuntimeError during generation: {e_gen}")
-                    raise
-            except Exception as e_other_gen:
-                logger.error(f"Unexpected error during generation: {e_other_gen}")
-                raise
-
-        if output_ids is None:
-            logger.error("Generation failed to produce output_ids.")
-            return "Error: Generation failed."
-
-        caption = self.tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0]
-        return caption.strip()
+        preds = self.tokenizer.batch_decode(
+            generated_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )
+        return preds
 
 
