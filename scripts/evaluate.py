@@ -245,18 +245,12 @@ def load_model_for_inference(config):
             else: tokenizer.add_special_tokens({'pad_token': '[PAD]'})
             logger.info(f"Set tokenizer pad_token: {tokenizer.pad_token}")
         
-        # Handle different model types for potential wrapping
+        # Modified section: Always wrap with MultimodalModel for consistency
         underlying_model_for_check = model_to_return.base_model.model if isinstance(model_to_return, PeftModel) else model_to_return
 
-        if isinstance(underlying_model_for_check, (BlipForConditionalGeneration, Blip2ForConditionalGeneration)):
-            logger.info(f"Wrapping {type(underlying_model_for_check).__name__} in MultimodalModel.")
-            return MultimodalModel(processor=processor, decoder=model_to_return, tokenizer=tokenizer), processor, tokenizer
-        elif isinstance(underlying_model_for_check, (MllamaForConditionalGeneration, GitForCausalLM, VisionEncoderDecoderModel, Qwen2VLForConditionalGeneration, Qwen2_5_VLForConditionalGeneration)):
-            logger.info(f"Using {type(underlying_model_for_check).__name__} directly.")
-            return model_to_return, processor, tokenizer
-        else: 
-            logger.info(f"Defaulting to wrap {type(underlying_model_for_check).__name__} in MultimodalModel.")
-            return MultimodalModel(processor=processor, decoder=model_to_return, tokenizer=tokenizer), processor, tokenizer
+        # Always use MultimodalModel for Qwen2VL and other models for consistent handling
+        logger.info(f"Wrapping {type(underlying_model_for_check).__name__} in MultimodalModel for consistent handling.")
+        return MultimodalModel(processor=processor, decoder=model_to_return, tokenizer=tokenizer), processor, tokenizer
     
     except Exception as e:
         logger.error(f"Error in load_model_for_inference for config '{config.get('decoder_name', 'N/A')}': {e}")
