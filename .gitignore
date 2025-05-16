@@ -179,3 +179,4 @@ trainer_logs/
 logs_tf_board/
 hf_token.txt
 valid_dataset/
+coco_valid/
