@@ -27,7 +27,7 @@ from torch.utils.data import DataLoader, Subset # Added DataLoader and Subset
 import albumentations as A
 
 from data import CocoDataset
-from evaluate_conceltual import load_model_for_inference
+from evaluate_conceptual import load_model_for_inference
 from multimodel_utils import MultimodalModel, MultimodalCollator 
 
 
