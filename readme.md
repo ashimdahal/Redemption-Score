@@ -1,3 +1,3 @@
 ## Redemption Score
 An evaluation framework to judge VLM models to caption images. Docs and full codebase releasing soon.
-Paper: https://ieeexplore.ieee.org/abstract/document/10959005
+Paper: here (https://arxiv.org/pdf/2505.16180)
